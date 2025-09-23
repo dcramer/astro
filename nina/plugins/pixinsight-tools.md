@@ -10,6 +10,6 @@ PixInsight Tools bridges N.I.N.A. and PixInsight so calibration scripts or proce
 ## Deployment Notes
 - Install PixInsight on the acquisition machine and ensure its command-line executable is in the system PATH.
 - Configure the plugin with the target process container or script path, plus any output directories that should be monitored by downstream automation.
-- Document each PixInsight project or script stored in version control (e.g., reference a `.xpsm` file under `docs/` if applicable).
+- Document each PixInsight project or script stored in version control and cross-reference it in the runbook when relevant.
 
-See the GitHub project and walkthrough video for configuration examples.citeturn9search0turn16search1
+See the GitHub project and walkthrough video for configuration examples.

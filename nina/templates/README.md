@@ -1,6 +1,11 @@
-# Template Library Guide
+# Template Library
 
-Our Advanced Sequencer templates round-trip between N.I.N.A. and this repository. Keep the folder names identical to the in-app library so imports remain organized (`1. Setup`, `2. Targets`, `3. Misc`, `4. Blocks`). Shared blocks live under `4. Blocks` and are pulled into session flows with Sequencer Powerups' Template by Reference instruction.
+## Purpose
+Store every Advanced Sequencer export we rely on and explain how to keep them synchronized with the live N.I.N.A. profile.
+
+## Contents
+- **1. Setup**, **2. Targets**, **3. Misc**, **4. Blocks** - mirror the in-app library for one-step imports.
+- **This README** - editing workflow, Template by Reference guidance, JSON conventions.
 
 ## Editing Workflow
 1. Build or tweak the sequence in N.I.N.A. and save/export it from the Advanced Sequencer sidebar.
@@ -13,7 +18,7 @@ Our Advanced Sequencer templates round-trip between N.I.N.A. and this repository
 - Use Sequencer Powerups > Misc > Template by Reference to insert shared blocks (startup, calibration, shutdown). Referenced templates must reside in the library before a sequence loads.
 - After editing a shared block, re-export it, replace the JSON in `4. Blocks`, and re-validate dependent sequences by opening them in N.I.N.A. (they pick up the new version automatically).
 - During debugging you may expand a reference and make temporary edits, but revert to the shared template before committing changes so downstream sequences stay in sync.
-- Track any intentional overrides in commit messages or `docs/` so the next operator understands why a sequence diverges from the shared block.
+- Track any intentional overrides in commit messages or `nina/ops/` so the next operator understands why a sequence diverges from the shared block.
 
 ## JSON Conventions
 - Two-space indentation; keep CRLF line endings that N.I.N.A. writes out.
@@ -21,3 +26,7 @@ Our Advanced Sequencer templates round-trip between N.I.N.A. and this repository
 - File names: `Target Name.template.json`, `Block - Action.template.json`, ASCII characters only.
 
 Re-run the workflow above whenever hardware, plugins, or filtering logic changes to keep the on-disk templates aligned with the live profile.
+
+## Maintenance
+- Re-export templates after simulator validation and commit the JSON alongside a note in `nina/ops/` if behavior changes.
+- Periodically audit sequences to confirm Template by Reference links still resolve and shared blocks remain centralized.

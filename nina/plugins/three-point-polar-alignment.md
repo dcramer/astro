@@ -8,8 +8,8 @@ Three Point Polar Alignment (3PPA) automates polar alignment inside N.I.N.A. by 
 - Integrates with the advanced sequencer so alignment can run at session start before focusing or target acquisition.
 
 ## Workflow Notes
-- Select the “Alignment Mode: Three Point PA” option in the plugin dock and ensure plate-solving is configured.
-- Use short exposures (1–2 s) with binning to speed up iterations, especially when near the pole.
+- Select the "Alignment Mode: Three Point PA" option in the plugin dock and ensure plate-solving is configured.
+- Use short exposures (1-2 s) with binning to speed up iterations, especially when near the pole.
 - Document the final polar error in session metadata for historical tracking.
 
-See the plugin documentation for detailed setup and best practices.citeturn18open0
+See the plugin documentation for detailed setup and best practices.

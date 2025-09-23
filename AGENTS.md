@@ -1,15 +1,10 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-- `templates/` mirrors the N.I.N.A. library: `1. Setup`, `2. Targets`, `3. Misc`, and `4. Blocks`. Match the in-app folder names so exported JSON round-trips cleanly.
-- `docs/` (if created) stores supporting write-ups such as observing checklists and troubleshooting notes.
-- `plugins/` contains plugin briefs; see `plugins/sequencer-powerups.md` for an example.
-- `profiles/` holds exported N.I.N.A. profiles or equipment presets when needed.
-
-## Build, Test, and Development Commands
-- `jq empty templates/<file>.template.json` — quick syntax validation for any edited template.
-- `jq --sort-keys . file.template.json > tmp && mv tmp file.template.json` — normalizes key order before committing.
-- `python3 -m json.tool file.template.json` — pretty-print nested blocks for review or diffing.
+- `nina/templates/` mirrors the N.I.N.A. library: `1. Setup`, `2. Targets`, `3. Misc`, and `4. Blocks`. Match the in-app folder names so exported JSON round-trips cleanly.
+- `nina/ops/` stores runbooks tied to the N.I.N.A. automation stack (observing checklists, troubleshooting notes, import/export SOPs).
+- `nina/plugins/` contains plugin briefs; see `nina/plugins/sequencer-powerups.md` for an example.
+- `hardware/` documents the physical rig, spacing budgets, and filter details needed across all tooling.
 
 ## Coding Style & Naming Conventions
 - JSON uses two-space indentation and retains CRLF line endings from N.I.N.A. exports.

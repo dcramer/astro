@@ -9,7 +9,7 @@ Hocus Focus adds a multi-star, real-time focusing utility that replaces the buil
 
 ## Usage Notes
 - Configure the plugin via the Hocus Focus dock; once enabled, Advanced Sequencer autofocus instructions will execute through Hocus Focus automatically.
-- Record chosen profiles, backlash settings, and weighting options when they deviate from defaults; store snapshots in `plugins/hocus-focus.md` for traceability.
+- Record chosen profiles, backlash settings, and weighting options when they deviate from defaults; store snapshots in `nina/plugins/hocus-focus.md` for traceability.
 - For testing, run the plugin's simulated autofocus to confirm step size and exposure before the next live session.
 
-Reference the user guide for detailed configuration steps.citeturn8search5
+Reference the user guide for detailed configuration steps.

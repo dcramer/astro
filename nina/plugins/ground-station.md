@@ -2,10 +2,9 @@
 
 Ground Station adds remote messaging instructions and triggers so N.I.N.A.'s Advanced Sequencer can notify us and our automation stack about session progress or failures.
 
-## Version & Compatibility
-- **Version:** 2.4.0.0 (released March 1, 2024)
-- **Minimum N.I.N.A.:** 3.0 RC1
-- **Installation:** Install from N.I.N.A.'s Plugin Manager, then restart to expose the Ground Station instruction/trigger category.
+## Setup Notes
+- Install from N.I.N.A.'s Plugin Manager and restart so the Ground Station instruction category appears.
+- Configure outputs under `Plugins > Ground Station` before adding instructions to sequences.
 
 ## Supported Services
 Configure one or more outputs under `Plugins > Ground Station`:
@@ -20,9 +19,9 @@ Configure one or more outputs under `Plugins > Ground Station`:
 ## Usage Notes
 
 ## Telegram Setup
-1. Chat with [@BotFather](https://t.me/BotFather) in Telegram, run `/newbot`, and follow the prompts to name the bot and pick a unique username. BotFather returns a token like `123456789:ABC-DEF...`—treat it as a secret.
+1. Chat with [@BotFather](https://t.me/BotFather) in Telegram, run `/newbot`, and follow the prompts to name the bot and pick a unique username. BotFather returns a token like `123456789:ABC-DEF...`-treat it as a secret.
 2. In the Ground Station settings (Plugins > Ground Station > Telegram), paste the bot token, and set the polling interval (default 30 s). Store the token in the ops secrets vault; never commit it.
-3. Retrieve the chat ID for the recipient channel: either add the bot to a group and use Telegram’s `getUpdates` API to read the `chat.id`, or DM the bot once and capture the resulting ID.
+3. Retrieve the chat ID for the recipient channel: either add the bot to a group and use Telegram's `getUpdates` API to read the `chat.id`, or DM the bot once and capture the resulting ID.
 4. Enter the chat ID in Ground Station and send a test message (`Ground Station > Send Message`). Verify the bot delivers alerts before enabling production triggers.
 
 - Add `Ground Station > Send Message` instructions after critical milestones (e.g., sequence start, target complete) and pair `Ground Station > On Failure` triggers with retry loops for automated escalation.
@@ -30,14 +29,14 @@ Configure one or more outputs under `Plugins > Ground Station`:
 - For unattended nights, combine Pushover alerts with Remote Copy and Shutdown PC so the phone notifies you if transfers stall or resolve before the system powers down.
 
 ## Maintenance Checklist
-- Document which services (Pushover, Telegram, MQTT topics) are live and store API keys in the secure ops vault—never in the repo.
-- Re-test message tokens after N.I.N.A. or plugin upgrades; `FORMAT_DATETIME` parsing changed in 2.4.0.0.
+- Document which services (Pushover, Telegram, MQTT topics) are live and store API keys in the secure ops vault-never in the repo.
+- Re-test message tokens after N.I.N.A. or plugin upgrades so formatting changes do not break alerts.
 - Review alert routing quarterly to ensure phone numbers, chat IDs, and HTTP endpoints remain valid.
 
 ## Open Tasks
 - [ ] Finalize notification channels (Pushover vs. Telegram) and record their credentials storage path.
 - [ ] Dry-run failure triggers in the simulator to confirm escalations fire correctly.
-- [ ] Capture a sample message template in `docs/` for future sequencer edits.
+- [ ] Capture a sample message template in the runbook so future sequencer edits stay consistent.
 
 ## References
 - Dale Ghent, "Ground Station for N.I.N.A.," accessed September 23, 2025. <https://daleghent.com/ground-station/>

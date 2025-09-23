@@ -8,8 +8,8 @@ Session Metadata captures structured run information at the end of each imaging 
 - Exposes variables that Advanced Sequencer templates can consume to branch on current conditions.
 
 ## Usage Notes
-- Configure the output directory to a repository-backed path (e.g., `docs/session-logs/`) so metadata files persist alongside templates.
+- Configure the output directory on your storage target and note the path in our runbooks so operators know where nightly logs land.
 - Adopt a consistent filename pattern such as `YYYY-MM-DD_session.json` for easy sorting.
 - Consider pairing with Web Session History Viewer to visualize metadata after each run.
 
-Refer to the repository documentation for advanced configuration options.citeturn1search5
+Refer to the repository documentation for advanced configuration options.

@@ -10,6 +10,6 @@ Web Session History Viewer hosts a lightweight web app that mirrors N.I.N.A.'s n
 ## Usage Notes
 - Deploy the plugin on the capture machine and confirm firewall rules allow inbound HTTP on the configured port.
 - Point laptops or tablets to `http://<capture-host>:<port>` to monitor progress during remote observing.
-- Archive exported session logs in `docs/session-logs/` alongside Session Metadata outputs for long-term reference.
+- Archive exported session logs with your other observatory records and note the location in our runbooks for traceability.
 
-Refer to the project's documentation for setup guidance and security considerations.citeturn12search0turn21open0
+Refer to the project's documentation for setup guidance and security considerations.

@@ -11,4 +11,4 @@ SGP Server Emulation restores the SGPro-compatible camera API that was removed i
 - Document port changes and share them with any external tools scripted against the API.
 - When upgrading N.I.N.A., confirm the plugin is updated to the latest release before the next imaging run.
 
-See the N.I.N.A. 3.0 release notes and the APPM integration guidance for background on the plugin's necessity.citeturn8search3turn8search4
+See the N.I.N.A. 3.0 release notes and the APPM integration guidance for background on the plugin's necessity.

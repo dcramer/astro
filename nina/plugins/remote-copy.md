@@ -10,6 +10,6 @@ Remote Copy automates post-capture file transfers so raw frames land on processi
 ## Deployment Notes
 - Configure a dedicated destination path in the plugin settings and ensure the N.I.N.A. service account has write access.
 - Pair with Shutdown PC or other end-of-night scripts to guarantee file transfer completes before power down.
-- Log transfer summaries under `docs/` when testing new storage hardware.
+- Log transfer summaries in the runbook when testing new storage hardware so trends and issues stay visible.
 
-See tcpalmer's plugin documentation for UI conventions and setup instructions.citeturn1search3
+See tcpalmer's plugin documentation for UI conventions and setup instructions.
