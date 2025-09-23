@@ -26,6 +26,16 @@
       },
       {
         "$id": "5",
+        "$type": "NINA.Sequencer.SequenceItem.Telescope.SetTracking, NINA.Sequencer",
+        "TrackingMode": 0,
+        "Parent": {
+          "$ref": "1"
+        },
+        "ErrorBehavior": 0,
+        "Attempts": 1
+      },
+      {
+        "$id": "6",
         "$type": "NINA.Sequencer.SequenceItem.FlatDevice.ToggleLight, NINA.Sequencer",
         "OnOff": false,
         "Parent": {
@@ -35,7 +45,7 @@
         "Attempts": 1
       },
       {
-        "$id": "6",
+        "$id": "7",
         "$type": "NINA.Sequencer.SequenceItem.FlatDevice.OpenCover, NINA.Sequencer",
         "Parent": {
           "$ref": "1"
@@ -44,10 +54,48 @@
         "Attempts": 1
       },
       {
-        "$id": "7",
+        "$id": "8",
+        "$type": "WhenPlugin.When.TemplateByReference, WhenPlugin",
+        "TemplateName": "Auto Focus",
+        "Condition": null,
+        "Instructions": {
+          "$id": "9",
+          "$type": "WhenPlugin.When.TemplateContainer, WhenPlugin",
+          "Strategy": {
+            "$type": "NINA.Sequencer.Container.ExecutionStrategy.SequentialStrategy, NINA.Sequencer"
+          },
+          "Name": null,
+          "Conditions": {
+            "$id": "10",
+            "$type": "System.Collections.ObjectModel.ObservableCollection`1[[NINA.Sequencer.Conditions.ISequenceCondition, NINA.Sequencer]], System.ObjectModel",
+            "$values": []
+          },
+          "IsExpanded": true,
+          "Items": {
+            "$id": "11",
+            "$type": "System.Collections.ObjectModel.ObservableCollection`1[[NINA.Sequencer.SequenceItem.ISequenceItem, NINA.Sequencer]], System.ObjectModel",
+            "$values": []
+          },
+          "Triggers": {
+            "$id": "12",
+            "$type": "System.Collections.ObjectModel.ObservableCollection`1[[NINA.Sequencer.Trigger.ISequenceTrigger, NINA.Sequencer]], System.ObjectModel",
+            "$values": []
+          },
+          "Parent": null,
+          "ErrorBehavior": 0,
+          "Attempts": 1
+        },
+        "Parent": {
+          "$ref": "1"
+        },
+        "ErrorBehavior": 0,
+        "Attempts": 1
+      },
+      {
+        "$id": "13",
         "$type": "NINA.Plugins.PolarAlignment.Instructions.PolarAlignment, NINA.Plugins.PolarAlignment",
         "Coordinates": {
-          "$id": "8",
+          "$id": "14",
           "$type": "NINA.Astrometry.InputTopocentricCoordinates, NINA.Astrometry",
           "AzDegrees": 1,
           "AzMinutes": 0,
@@ -61,10 +109,10 @@
         "EastDirection": true,
         "TargetDistance": 10,
         "ManualMode": false,
-        "StartFromCurrentPosition": true,
+        "StartFromCurrentPosition": false,
         "AlignmentTolerance": 0.0,
         "Filter": {
-          "$id": "9",
+          "$id": "15",
           "$type": "NINA.Core.Model.Equipment.FilterInfo, NINA.Core",
           "_name": "L",
           "_focusOffset": 0,
@@ -72,7 +120,7 @@
           "_autoFocusExposureTime": -1.0,
           "_autoFocusFilter": false,
           "FlatWizardFilterSettings": {
-            "$id": "10",
+            "$id": "16",
             "$type": "NINA.Core.Model.Equipment.FlatWizardFilterSettings, NINA.Core",
             "FlatWizardMode": 0,
             "HistogramMeanTarget": 0.3,
@@ -84,14 +132,14 @@
             "Gain": -1,
             "Offset": -1,
             "Binning": {
-              "$id": "11",
+              "$id": "17",
               "$type": "NINA.Core.Model.Equipment.BinningMode, NINA.Core",
               "X": 2,
               "Y": 2
             }
           },
           "_autoFocusBinning": {
-            "$id": "12",
+            "$id": "18",
             "$type": "NINA.Core.Model.Equipment.BinningMode, NINA.Core",
             "X": 2,
             "Y": 2
@@ -99,11 +147,11 @@
           "_autoFocusGain": -1,
           "_autoFocusOffset": -1
         },
-        "ExposureTime": 2.0,
+        "ExposureTime": 3.0,
         "Gain": 100,
         "Offset": -1,
         "Binning": {
-          "$id": "13",
+          "$id": "19",
           "$type": "NINA.Core.Model.Equipment.BinningMode, NINA.Core",
           "X": 2,
           "Y": 2
@@ -117,7 +165,7 @@
     ]
   },
   "Triggers": {
-    "$id": "14",
+    "$id": "20",
     "$type": "System.Collections.ObjectModel.ObservableCollection`1[[NINA.Sequencer.Trigger.ISequenceTrigger, NINA.Sequencer]], System.ObjectModel",
     "$values": []
   },
