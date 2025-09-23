@@ -5,7 +5,8 @@ This repository tracks everything needed to reproduce our automated deep-sky ima
 ## Repository Layout
 - `nina/templates/` - Advanced Sequencer exports pulled straight from N.I.N.A.
 - `nina/plugins/` - How we configure each plugin and the reminders we need when reinstalling.
-- `nina/ops/` - Runbooks and checklists for sequencer workflows (mount setup, automation SOPs, troubleshooting).
+- `nina/ops/` - Runbooks tied to N.I.N.A. operations (mount setup, automation SOPs, troubleshooting).
+- `pixinsight/` - Stacking and post-processing workflows executed in PixInsight.
 - `hardware/` - Imaging rig specifications, spacing budgets, and filter notes.
 - `horizons/` - Site-specific horizon masks (`.hrz`) and capture instructions.
 
@@ -16,6 +17,7 @@ Follow the guidance in `AGENTS.md` before contributing; most importantly, never 
 - [Plugin Library](nina/plugins/README.md) - current plugin roster, integration notes, and links to official docs.
 - [Astro-Physics Mount Notes](nina/ops/astro-physics-mounts.md) - APCC/APPM integration specifics for the Mach2GTO.
 - [Polar Alignment Runbook](nina/ops/polar-alignment.md) - combined Mach2 alignment and N.I.N.A. TPPA workflow.
+- [PixInsight Processing Guide](pixinsight/pixinsight-processing.md) - stacking and post-processing workflow for integrated data.
 - [Hardware Inventory](hardware/README.md) - mount, optics, camera train, and filter specifications with derived imaging metrics.
 - [Horizon Profiles](horizons/README.md) - recording skyline limits and importing them into N.I.N.A.
 
