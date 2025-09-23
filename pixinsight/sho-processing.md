@@ -1,17 +1,18 @@
-# PixInsight Stacking and Processing
+# PixInsight SHO Stacking and Processing
 
 ## Purpose
-Provide a repeatable PixInsight workflow for calibrating, stacking, and finishing deep-sky data from our rigs. The focus is on PixInsight 1.9.3 "Lockhart," its updated WeightedBatchPreprocessing (WBPP) 2.8 script, and the companion tools we rely on most often.
+Provide a repeatable PixInsight workflow for calibrating, stacking, and finishing SHO (S II / H-alpha / O III) narrowband data from our rigs. The focus is on PixInsight 1.9.3 "Lockhart," its updated WeightedBatchPreprocessing (WBPP) 2.8 script, and the companion tools we rely on most often.
 
 ## At a Glance
 - **Software baseline:** PixInsight 1.9.3 (Lockhart) with WBPP 2.8.3, BlurXTerminator / NoiseXTerminator / StarXTerminator (optional RC Astro add-ons), Generalized Hyperbolic Stretch (GHS) process module, and GraXpert 3.0.2 for gradient removal.
-- **Target accuracy:** Integrated masters should have FWHM <= 2x seeing-limited frames, background gradients < 5% across field, and residual green channel < 0.1 after SPCC/SCNR for broadband targets.
+- **Target accuracy:** Integrated masters should have FWHM <= 2x seeing-limited frames; channel-to-channel flux ratio variations < 10% after LocalNormalization; final star color reinjected without noticeable magenta halos.
 - **Session dependencies:** Calibrated calibration frames (bias/dark/dark-flat/flat) from the same camera gain, temperature, and optical configuration; metadata preserved in FITS headers; master dark library kept up to date per seasonal temperature swing.
 
 ## Prerequisites
 1. Install or upgrade PixInsight 1.9.3 from the software distribution site, then run `Resources > Updates > Check for Updates` to pull the latest scripts.
 2. Add third-party repositories as needed: RC Astro tools and GraXpert each publish PixInsight update URLs that can be pasted into `Resources > Updates > Manage Repositories`.
 3. Organize lights by filter, session, and exposure length. Keep calibration frames tightly matched to each configuration per PixInsight's master frame guidance.
+4. Optional: configure PixInsight to auto-load your process icons (WBPP presets, PixelMath mixes, masks) using Nebularama's startup icon loader instructions for Windows. https://nebularama.com/2023/07/10/automatically-load-process-icons-in-pixinsight-on-windows/
 
 ## Data Preparation
 - **File hygiene:** Keep consistent naming so WBPP can auto-group frames, and cull problem subframes with Blink before they skew weighting.
@@ -31,7 +32,7 @@ Provide a repeatable PixInsight workflow for calibrating, stacking, and finishin
    - Select **Distortion Correction** for wide-field refractors; disable for narrowfields to save runtime.
    - Drizzle Integration: enable only when pixel scale <= 0.5"/px and dithered data are available; confirm `Enforce Rejection` is ticked to avoid memory spikes.
 5. **Execution Monitor & Cache:**
-   - Use the WBPP Execution Monitor to validate each stage; WBPP 2.8's caching lets you rerun integration choices without repeating calibration.
+   - Use the WBPP Execution Monitor to validate each stage; WBPP 2.8's caching lets you rerun integration choices without repeating calibration. When experimenting with rejection algorithms, re-run only the integration step via "Use existing calibrated/registered data."
 6. Output masters land under `_APP` (calibrated data) and `_APP/master` (integrations). Export the WBPP log for traceability.
 
 ## Post-WBPP Quality Checks
@@ -48,20 +49,24 @@ Provide a repeatable PixInsight workflow for calibrating, stacking, and finishin
 4. **Linear Stretch Prep:** Create starless copy via **StarXTerminator** (optional) to allow separate nebula/star treatment. Save masks for later.
 
 ## Stretching and Non-Linear Enhancements
-1. Perform initial stretch with **GeneralizedHyperbolicStretch** (GHS) for detail-preserving lift; monitor black point histogram.
+1. Perform initial stretch with **GeneralizedHyperbolicStretch** (GHS) for detail-preserving lift; monitor black point histogram. Nebularama recommends stretching H-alpha separately for use as a synthetic luminance layer once color is set.
 2. Fine-tune with **HistogramTransformation** or **MaskedStretch** for star layers.
 3. **Color Management:**
    - **CurvesTransformation** with ColorMask or RangeMask for targeted saturation.
-   - SHO remapping via PixelMath (e.g., HOO/Hubble palette). Keep green shift in check with **SCNR** or **Hue curves**; avoid over-suppressing emission regions. Nebularama's two-part SHO series (July 2023) offers practical recipes for channel balancing, Ha luminance, and selective saturation. Part 1: https://nebularama.com/2023/07/08/sho-processing-narrowband-data-in-pixinsight-part-one/ - Part 2: https://nebularama.com/2023/07/16/sho-processing-in-pixinsight-part-two/
+   - SHO remapping via PixelMath. Two baseline mixes we use:
+     - Hubble palette (SII,H-alpha,OIII -> R,G,B): `R = SII`, `G = 0.15*SII + 0.85*Halpha`, `B = OIII`.
+     - Dynamic mix inspired by Nebularama Part 1: `R = 0.25*SII + 0.75*Halpha`, `G = 0.15*SII + 0.85*OIII`, `B = OIII`. Adjust coefficients after LinearFit to taste.
+   - After mapping, extract the stretched H-alpha frame as a luminance layer, run NoiseXTerminator/LocalHistogramEqualization on it, and combine with the SHO color image using **LRGBCombination** (per Nebularama Part 2).
+   - Keep green shift in check with **SCNR** or **Hue curves**; avoid over-suppressing emission regions. Nebularama's two-part SHO series (July 2023) provides detailed recipes for selective saturation and star hue retention. Part 1: https://nebularama.com/2023/07/08/sho-processing-narrowband-data-in-pixinsight-part-one/ - Part 2: https://nebularama.com/2023/07/16/sho-processing-in-pixinsight-part-two/
 4. **Detail & Stars:**
-   - Apply **LocalHistogramEqualization** and **HDRMultiscaleTransform** on starless data for contrast; reinject stars via PixelMath with moderated scaling (0.8-0.9 multiply) to prevent bloating.
-   - Use **MorphologicalTransformation** or **StarXTerminator** star reduction if necessary.
+   - Apply **LocalHistogramEqualization** and **HDRMultiscaleTransform** on the starless copy for contrast; reinject stars via PixelMath with moderated scaling (0.75-0.9 multiply) to prevent bloating.
+   - For tighter stars, follow Nebularama's approach: use **Bill Blanshan Star Reduction** PixelMath icons (available via NightPhotons repository) or a MorphologicalTransformation with a star mask dedicated to bright cores.
 5. **Finishing Touches:**
    - Inspect background with **Statistics** process to keep median ~0.12-0.18 and noise sigma uniform across field.
    - Stamp residual artifacts with **CloneStamp** sparingly.
 
 ## Narrowband vs. One-Shot Color Notes
-- **OSC:** Dual-band filters simplify emission targets; after stacking, extract channels if you need separate H-alpha/OIII treatments, then rebalance with SPCC and gentle SCNR.
+- **OSC:** (Covered in a future guide.) Dual-band filters simplify emission targets; after stacking, extract channels if you need separate H-alpha/OIII treatments, then rebalance with SPCC and gentle SCNR.
 - **Monochrome SHO:** Calibrate each filter set independently in WBPP, normalize channels with **LinearFit**, then map colors via PixelMath (HOO, SHO, or custom). Use ColorMask-based tweaks to keep faint nebulosity intact. Nebularama's workflow highlights star color recovery with PixelMath after SHO stretches (Part 2 covers star reintegration).
 
 ## Export & Archiving

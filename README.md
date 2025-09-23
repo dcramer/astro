@@ -17,7 +17,8 @@ Follow the guidance in `AGENTS.md` before contributing; most importantly, never 
 - [Plugin Library](nina/plugins/README.md) - current plugin roster, integration notes, and links to official docs.
 - [Astro-Physics Mount Notes](nina/ops/astro-physics-mounts.md) - APCC/APPM integration specifics for the Mach2GTO.
 - [Polar Alignment Runbook](nina/ops/polar-alignment.md) - combined Mach2 alignment and N.I.N.A. TPPA workflow.
-- [PixInsight Processing Guide](pixinsight/pixinsight-processing.md) - stacking and post-processing workflow for integrated data.
+- [PixInsight SHO Processing Guide](pixinsight/sho-processing.md) - stacking and post-processing workflow for narrowband data.
+- [PixInsight OSC Processing Guide](pixinsight/osc-processing.md) - stacking and post-processing workflow for one-shot color data.
 - [Hardware Inventory](hardware/README.md) - mount, optics, camera train, and filter specifications with derived imaging metrics.
 - [Horizon Profiles](horizons/README.md) - recording skyline limits and importing them into N.I.N.A.
 

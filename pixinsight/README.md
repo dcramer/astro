@@ -4,7 +4,8 @@
 Document stacking and post-processing procedures that occur entirely inside PixInsight so the imaging team can reproduce results outside the N.I.N.A. capture workflow.
 
 ## Contents
-- **pixinsight-processing.md** - Integration, calibration, and post-processing path built around PixInsight 1.9.3 (Lockhart), WBPP 2.8.x, and modern RC Astro/GraXpert tooling.
+- **sho-processing.md** - Narrowband (SHO) stacking and post-processing workflow built around PixInsight 1.9.3 (Lockhart), WBPP 2.8.x, and modern RC Astro/GraXpert tooling.
+- **osc-processing.md** - One-shot color (OSC) stacking and post-processing workflow with color-preserving calibration, SPCC, and star color enhancement.
 
 Add additional guides here for specialized topics (e.g., mosaic workflows, narrowband combination strategies, custom scripts) as they mature.
 
