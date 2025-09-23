@@ -22,10 +22,16 @@ function formatDuration(seconds: number | undefined) {
   const secs = totalSeconds % 60;
 
   if (hours > 0) {
+    if (minutes === 0) {
+      return `${hours}h`;
+    }
     return `${hours}h ${minutes}m`;
   }
 
   if (minutes > 0) {
+    if (secs === 0) {
+      return `${minutes}m`;
+    }
     return `${minutes}m ${secs}s`;
   }
 
@@ -163,18 +169,16 @@ function StatusOverlay({
             </div>
           </div>
           <div className={styles.statRow}>
-            <div className={styles.statCard}>
-              <span className={styles.statLabel}>Frames</span>
-              <span className={styles.statValue}>0</span>
-            </div>
-            <div className={styles.statCard}>
-              <span className={styles.statLabel}>Integration</span>
-              <span className={styles.statValue}>—</span>
-            </div>
-            <div className={styles.statCard}>
-              <span className={styles.statLabel}>Status</span>
-              <span className={styles.statValue}>{message}</span>
-            </div>
+            {[
+              { label: "Status", value: message },
+              { label: "Subs", value: "0" },
+              { label: "Integration", value: "—" },
+            ].map((stat) => (
+              <div className={styles.statCard} key={stat.label}>
+                <span className={styles.statLabel}>{stat.label}</span>
+                <span className={styles.statValue}>{stat.value}</span>
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -210,25 +214,132 @@ export default async function Page() {
   const activeTarget = getActiveTarget(history);
   const targetSummary = activeTarget ? summarizeTarget(activeTarget) : null;
 
-  const hasFrames = Boolean(targetSummary?.records.length);
+  const hasTargetFrames = Boolean(targetSummary?.records.length);
   const latest = targetSummary?.latestRecord ?? null;
-  const latestThumbnailUrl = hasFrames
+  const latestThumbnailUrl = hasTargetFrames
     ? getThumbnailUrl(baseUrl, summary.key, latest)
     : null;
 
-  const latestFilter = latest?.filterName?.trim() ?? (hasFrames ? "Unfiltered" : "—");
-  const latestCaptured = hasFrames ? formatTime(latest?.started) : "—";
-  const latestDuration = formatDuration(latest?.duration);
-  const totalFrames = targetSummary?.records.length ?? 0;
-  const totalIntegration = targetSummary?.totalIntegrationSeconds ?? 0;
-  const sessionDurationSeconds = Math.max(
-    0,
-    Math.floor((Date.now() - new Date(history.startTime).getTime()) / 1000),
+  const allImageRecords = (history.targets ?? []).flatMap(
+    (target) => target.imageRecords ?? [],
   );
 
-  const previewClass = hasFrames
+  const latestFilter = latest?.filterName?.trim() ?? (hasTargetFrames ? "Unfiltered" : "—");
+  const latestCaptured = hasTargetFrames ? formatTime(latest?.started) : "—";
+  const latestDuration = formatDuration(latest?.duration);
+
+  const sessionFrameCount = allImageRecords.length;
+  const sessionIntegrationSeconds = allImageRecords.reduce(
+    (total, record) => total + (record.duration ?? 0),
+    0,
+  );
+  const previewClass = hasTargetFrames
     ? styles.thumbnail
     : `${styles.thumbnail} ${styles.thumbnailSquare}`;
+
+  const filterTotals = new Map<
+    string,
+    { count: number; durationSeconds: number }
+  >();
+  const normalizedTotals = new Map<
+    string,
+    { count: number; durationSeconds: number; labels: Set<string> }
+  >();
+
+  allImageRecords.forEach((record) => {
+    const filterKey = record.filterName?.trim() || "Unfiltered";
+    const entry = filterTotals.get(filterKey) ?? { count: 0, durationSeconds: 0 };
+    entry.count += 1;
+    entry.durationSeconds += record.duration ?? 0;
+    filterTotals.set(filterKey, entry);
+
+    const normalized = filterKey.toLowerCase();
+    const normalizedEntry =
+      normalizedTotals.get(normalized) ?? {
+        count: 0,
+        durationSeconds: 0,
+        labels: new Set<string>(),
+      };
+    normalizedEntry.count += 1;
+    normalizedEntry.durationSeconds += record.duration ?? 0;
+    normalizedEntry.labels.add(filterKey);
+    normalizedTotals.set(normalized, normalizedEntry);
+  });
+
+  const availableFilters = Array.from(filterTotals.keys());
+  const normalizedFilters = availableFilters.map((filter) => filter.toLowerCase());
+
+  const hasHa = normalizedFilters.includes("ha");
+  const hasSii = normalizedFilters.some((filter) =>
+    ["sii", "s-ii", "s2"].includes(filter),
+  );
+  const hasOiii = normalizedFilters.some((filter) =>
+    ["oiii", "o-iii"].includes(filter),
+  );
+  const hasNarrowband = hasHa && hasSii && hasOiii;
+  const hasRGB = ["r", "g", "b"].every((key) => normalizedFilters.includes(key));
+
+  const getGroupTotals = (keys: string[], displayLabel: string) => {
+    let count = 0;
+    let durationSeconds = 0;
+    keys.forEach((key) => {
+      const totals = normalizedTotals.get(key.toLowerCase());
+      if (totals) {
+        count += totals.count;
+        durationSeconds += totals.durationSeconds;
+      }
+    });
+
+    if (count === 0) {
+      return null;
+    }
+
+    return {
+      label: `Filter ${displayLabel}`,
+      value: `${count} subs · ${formatDuration(durationSeconds)}`,
+    };
+  };
+
+  const narrowbandGroups = [
+    { keys: ["ha"], label: "Ha" },
+    { keys: ["sii", "s-ii", "s2"], label: "SII" },
+    { keys: ["oiii", "o-iii"], label: "OIII" },
+  ];
+
+  const rgbGroups = [
+    { keys: ["r"], label: "R" },
+    { keys: ["g"], label: "G" },
+    { keys: ["b"], label: "B" },
+  ];
+
+  const narrowbandStats = narrowbandGroups
+    .map(({ keys, label }) => getGroupTotals(keys, label))
+    .filter((item): item is { label: string; value: string } => item !== null);
+
+  const rgbStats = rgbGroups
+    .map(({ keys, label }) => getGroupTotals(keys, label))
+    .filter((item): item is { label: string; value: string } => item !== null);
+
+  let filterStats: { label: string; value: string }[];
+
+  if (narrowbandStats.length > 0) {
+    filterStats = narrowbandStats;
+  } else if (rgbStats.length === rgbGroups.length) {
+    filterStats = rgbStats;
+  } else {
+    filterStats = availableFilters
+      .map((filter) => {
+        const totals = filterTotals.get(filter);
+        if (!totals) {
+          return null;
+        }
+        return {
+          label: `Filter ${filter}`,
+          value: `${totals.count} subs · ${formatDuration(totals.durationSeconds)}`,
+        };
+      })
+      .filter((item): item is { label: string; value: string } => item !== null);
+  }
 
   const secondaryStats = [
     {
@@ -237,17 +348,13 @@ export default async function Page() {
     },
     {
       label: "Subs",
-      value: totalFrames.toString(),
+      value: sessionFrameCount.toString(),
     },
     {
       label: "Integration",
-      value: formatDuration(totalIntegration),
+      value: formatDuration(sessionIntegrationSeconds),
     },
-    {
-      label: "Session",
-      value: formatDuration(sessionDurationSeconds),
-    },
-    { label: "Profile", value: history.profileName },
+    ...filterStats,
   ];
 
   return (
@@ -262,7 +369,7 @@ export default async function Page() {
               />
             ) : (
               <div className={styles.thumbnailFallback}>
-                {hasFrames ? "Preview pending…" : "Waiting for first frame…"}
+                {hasTargetFrames ? "Preview pending…" : "Waiting for first frame…"}
               </div>
             )}
           </div>
