@@ -1,47 +1,45 @@
-# APPM All-Sky Modelling Playbook
+# APPM All-Sky Modelling Notes
 
-This runbook captures the workflows we follow when building, verifying, and troubleshooting Astro-Physics Point Mapper (APPM) models that backstop N.I.N.A. automation and unguided imaging.
+When the mount needs a fresh pointing model, this is the playbook I reach for. It keeps APPM runs predictable without sounding like a dry SOP.
 
-## Scope and Prerequisites
-- **Software**: APCC Pro 1.9.7.17 or later with APPM and Dec Arc tracking licenses enabled; AP V2 ASCOM driver 5.60.06+; configured plate solver (ASTAP, PlateSolve2, PinPoint full, or TheSkyX Image Link). See the APPM version history and feature overview for current requirements ([Astro-Physics](https://www.apastrosoftware.com/help/apcc-pro/version_history.htm), [Sirius Imaging](https://www.siriusimaging.com/Help/APCC/features.htm)).
-- **Hardware setup**: Mount homed or parked, optics balanced, cables strain-relieved, temperature and pressure telemetry available when possible so refraction terms stay accurate ([Astro-Physics](https://www.apastrosoftware.com/help/apcc-pro/appm_overview.htm)).
-- **Session prep**: Warm start by slewing near zenith and running a plate solve with both *Recal* and *Recenter* enabled to synchronize the controller before mapping ([Astro-Physics](https://www.apastrosoftware.com/help/apcc-pro/appm_run_menu.htm)).
+### Gear check before you launch APPM
+- APCC Pro 1.9.7.17+ with the APPM and Dec Arc licenses unlocked.
+- AP V2 ASCOM driver 5.60.06 or newer pointing at the same COM/IP that APCC uses.
+- Plate solver in working order (ASTAP, PlateSolve2, PinPoint, or TheSkyX Image Link).
+- Mount parked, optics balanced, cables tidy, and—if available—temperature/pressure telemetry feeding APCC so refraction terms behave.
+- Warm start: slew near zenith, run a plate solve with both `Recal` and `Recenter` to sync the controller.
 
-## Standard All-Sky Model Build
-1. **Load or create mapping grid**: Use the Measurement Points tab to select an all-sky grid sized for the payload; for unguided automation we typically map 200-300 points per pier side so interpolation stays smooth (internal practice) ([Astro-Physics](https://www.apastrosoftware.com/help/apcc-pro/appm_overview.htm), [Sirius Imaging](https://www.siriusimaging.com/Help/APCC/features.htm)).
-2. **Enable guiding options**: Check *Recal near Zenith at Start* and confirm exposure, binning, timeout, and image scale settings match the current optics so plate solves converge reliably ([Astro-Physics](https://www.apastrosoftware.com/help/apcc-pro/appm_platesolve_settings_tab.htm)).
-3. **Run the model**: Start the mapping run and monitor the Good/Bad solve counters in the Run tab; investigate repeated failures immediately to avoid corrupting the point cloud ([Astro-Physics](https://www.apastrosoftware.com/help/apcc-pro/appm_run_menu.htm)).
-4. **Install in APCC**: After the run completes, push the new dual-sided model into APCC and enable both pointing and tracking corrections. Confirm Dec Arc tracking is active once you have adequate declination coverage ([Astro-Physics](https://www.apastrosoftware.com/help/apcc-pro/advanced_pointing_model.htm), [Sirius Imaging](https://www.siriusimaging.com/Help/APCC/pointing_model_window.htm)).
+### Building the model without drama
+Pick the all-sky grid that fits tonight’s payload. For unguided automation we usually map 200–300 points per pier side to keep interpolation smooth. In the Measurement Points tab enable `Recal near Zenith at Start`, then double-check exposure, binning, timeout, and image scale so the solver nails focus right away. Kick off the run and keep an eye on the Good/Bad counters—if solves start failing, pause and fix the issue before the point cloud goes sideways. When the pass finishes, push the model into APCC, enable pointing + tracking corrections, and confirm Dec Arc tracking flips on once you’ve covered enough declination.
 
-## Verify Before Imaging
-- **Quick Verify**: Run APPM in *Verify Pointing Model* mode with 30-40 points per pier side to sample the sky quickly and confirm the residuals sit inside expectations ([Astro-Physics](https://www.apastrosoftware.com/help/apcc-pro/appm_run_menu.htm)).
-- **5x Verify for repeatability**: When chasing sub-arcminute accuracy or diagnosing flexure, select *Model 5x and Park* so APPM repeats the verify set five times and highlights persistent outliers ([Astro-Physics](https://www.apastrosoftware.com/help/apcc-pro/appm_run_menu.htm)).
-- **Log management**: Use the APCC Log Zipper after a 5x verify run to archive solver logs alongside the uploaded model for regression tracking ([Astro-Physics](https://www.apastrosoftware.com/help/apcc-pro/appm_run_menu.htm)).
+### Quick confidence pass
+Before you cut to lights, flip APPM into *Verify Pointing Model*. Thirty to forty samples per pier side is enough to confirm residuals behave. Chasing sub-arcminute unguided work? Use *Model 5x and Park* so APPM repeats the verify set five times—persistent outliers pop right out. Wrap each run with APCC Log Zipper so you have the plate-solve receipts next to the installed model.
 
-## Polar Alignment Touch-Up
-- Capture a targeted 25-30 point map and read the azimuth and altitude offsets inside the APCC Pointing Model window. Apply mechanical adjustments, then rebuild the main model to fold the correction into the all-sky solution ([Astro-Physics](https://www.apastrosoftware.com/help/apcc-pro/advanced_pointing_model.htm)).
+### Polar alignment touch-up (optional but fast)
+Grab a targeted 25–30 point map, read the azimuth/altitude offsets in APCC, and turn the Mach2 knobs using the cheat sheet below. Apply half the correction, rerun the mini-map, then finish the adjustment. Anything under ~1 arc-minute on both axes is good enough to hand off to TPPA for the final tweak.
 
-## Understanding RA/Dec Delta Metrics
-- Each APPM data point stores the gap between the commanded coordinates and the plate-solved position; APPM reports that gap separately as RA delta and Dec delta in arcseconds ([Astro-Physics](https://www.apastrosoftware.com/help/apcc-pro/appm_platesolve_settings_tab.htm)).
-- APCC rejects models whose RMS residual exceeds 500 arcseconds (about 8.3 arcminutes), so routinely seeing deltas near or above that threshold signals a major calibration or alignment fault ([Astro-Physics](https://www.apastrosoftware.com/help/apcc-pro/version_history.htm), [Sirius Imaging](https://www.siriusimaging.com/Help/APCC/pointing_model_window.htm)).
-- *Practical guidance (internal inference)*: For unguided imaging we target verify-run RA and Dec deltas under 60 arcseconds so the residual drift remains under a few pixels at common imaging scales. Treat higher values as a trigger to rerun the troubleshooting checklist below.
+### RA/Dec delta sanity targets
+APPM reports the gap between commanded vs plate-solved coordinates as separate RA and Dec deltas. APCC throws out models with RMS >500 arc-seconds (~8.3 arc-minutes), but we aim much tighter: keep verify-run RA and Dec deltas under 60 arc-seconds so unguided subs stay crisp. Seeing higher numbers is my cue to run the troubleshooting checklist below.
 
-## Troubleshooting >1 Arcminute Residuals
-1. **Confirm reference frame**: Re-run plate solve with *Recal* and *Recenter* before restarting APPM to clear index errors ([Astro-Physics](https://www.apastrosoftware.com/help/apcc-pro/appm_run_menu.htm)).
-2. **Check polar alignment**: Use the quick 25-30 point map to quantify azimuth and altitude errors and adjust the mount before rebuilding the main model ([Astro-Physics](https://www.apastrosoftware.com/help/apcc-pro/advanced_pointing_model.htm)).
-3. **Inspect plate solving**: Verify exposure, binning, field of view, and image scale settings so the solver returns reliable residuals ([Astro-Physics](https://www.apastrosoftware.com/help/apcc-pro/appm_platesolve_settings_tab.htm)).
-4. **Identify mechanical contributors**: Inspect for flexure, sagging camera trains, or cable drag in the sky regions that show persistent outliers ([Astro-Physics](https://www.apastrosoftware.com/help/apcc-pro/advanced_pointing_model.htm)).
-5. **Run a 5x verify**: Repeat the verify set five times to confirm whether the outliers are repeatable (mechanical) or random (environmental) before the next full mapping run ([Astro-Physics](https://www.apastrosoftware.com/help/apcc-pro/appm_run_menu.htm)).
+### If residuals blow past an arc-minute
+1. Re-run a plate solve with `Recal` + `Recenter` to clear any sync funk before restarting APPM.
+2. Knock out a quick polar check, adjust the mount, then rebuild the main model.
+3. Inspect plate-solver settings—exposure too short, wrong binning, or bad image scale will tank residuals.
+4. Walk the rig for flexure or cable drag where the outliers live.
+5. Run the 5x verify loop to separate repeatable mechanical issues from random seeing spikes before you burn another full-sky pass.
 
-## Recording Results
-- Document model date, time, point count, pier sides, verify statistics (mean and max RA/Dec delta), polar adjustments, and any mechanical fixes. Store APPM logs and APCC model files under `ops/` for traceability ([Astro-Physics](https://www.apastrosoftware.com/help/apcc-pro/appm_overview.htm)).
-- Log unguided exposure tests and residual summaries in session notes so regressions are easy to spot in future seasons ([Sirius Imaging](https://www.siriusimaging.com/Help/APCC/features.htm)).
+### Logging what matters
+Drop the essentials into the session log: date, point count per pier side, verify stats (mean/max RA/Dec delta), any polar tweaks, and mechanical fixes. Archive the APPM log bundle and APCC model files under `ops/` so we can rewind later. If you tested unguided exposures post-model, add the residual drift numbers too.
 
-## References
-- Astro-Physics, "APPM Run Menu," accessed September 23, 2025: https://www.apastrosoftware.com/help/apcc-pro/appm_run_menu.htm
-- Astro-Physics, "APPM Overview," accessed September 23, 2025: https://www.apastrosoftware.com/help/apcc-pro/appm_overview.htm
-- Astro-Physics, "APPM Plate Solve Settings," accessed September 23, 2025: https://www.apastrosoftware.com/help/apcc-pro/appm_platesolve_settings_tab.htm
-- Astro-Physics, "Advanced Pointing Model," accessed September 23, 2025: https://www.apastrosoftware.com/help/apcc-pro/advanced_pointing_model.htm
-- Astro-Physics, "APCC Version History" (v1.9.7.17), accessed September 23, 2025: https://www.apastrosoftware.com/help/apcc-pro/version_history.htm
-- Sirius Imaging, "APCC Features," accessed September 23, 2025: https://www.siriusimaging.com/Help/APCC/features.htm
-- Sirius Imaging, "APCC Pointing Model Window," accessed September 23, 2025: https://www.siriusimaging.com/Help/APCC/pointing_model_window.htm
+### Knob conversion cheat sheet
+- Azimuth: one full turn ≈ 42′, one tick ≈ 6′.
+- Altitude at ~40° latitude: one full turn ≈ 71′, one tick ≈ 4.4′.
+
+### References worth keeping around
+- [Astro-Physics, "APPM Run Menu"](https://www.astro-physics.com/apcc) (accessed 2025-09-23).
+- [Astro-Physics, "APPM Overview"](https://www.astro-physics.com/apcc) (accessed 2025-09-23).
+- [Astro-Physics, "APPM Plate Solve Settings"](https://www.astro-physics.com/apcc) (accessed 2025-09-23).
+- [Astro-Physics, "Advanced Pointing Model"](https://www.astro-physics.com/apcc) (accessed 2025-09-23).
+- [Astro-Physics, "APCC Version History" (v1.9.7.17)](https://www.astro-physics.com/apcc) (accessed 2025-09-23).
+- [Sirius Imaging, "APCC Features"](https://www.siriusimaging.com/) (accessed 2025-09-23).
+- [Sirius Imaging, "APCC Pointing Model Window"](https://www.siriusimaging.com/) (accessed 2025-09-23).

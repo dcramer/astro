@@ -1,23 +1,22 @@
 # Calibration Index Log
 
-## Purpose
-Track calibration master refresh deadlines and summarize quality metrics so we can spot drift before it impacts live imaging profiles.
+This page is the running ledger for our calibration masters. Use it to remember when to rebuild libraries and to spot drift before it sneaks into live profiles.
 
-## Refresh Calendar
-- Create two recurring calendar events: March 15 and September 15 each year to rebuild master dark and dark-flat libraries (aligns with cool/warm observing seasons).
-- Add an annual January 5 reminder to regenerate master bias frames or immediately after any camera firmware, driver, or readout mode change.
-- When imaging presets change (new gain, offset, sensor mode, or temperature setpoint), schedule an ad-hoc calibration run within 48 hours and record it below.
+### Refresh calendar
+- March 15 + September 15: rebuild master dark and dark-flat libraries (cool vs warm observing seasons).
+- January 5: refresh bias masters, or sooner if you touch firmware/driver/readout settings.
+- Any time gain/offset/sensor mode/temperature changes, schedule a calibration run within 48 hours and note it here.
 
-## Master Library Metrics Template
-| Date | Preset (Gain/Offset/Mode) | Frame Type | Exposure (s) | Mean ADU | Median ADU | Hot Pixels (>5 sigma) | Notes |
+### Master library metrics template
+| Date | Preset (Gain/Offset/Mode) | Frame Type | Exposure (s) | Mean ADU | Median ADU | Hot Pixels (>5σ) | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | _Add rows after each calibration session_ | | | | | | | |
 
-## Logging Guidelines
-- Record PixInsight ImageIntegration statistics (mean, median, hot pixel count) for every master generated; update the table above or maintain one row per file in an external CSV if preferred.
-- Attach the corresponding PixInsight `.xrs` log path in the Notes column so future reviews can trace rejection parameters.
-- If any metric drifts by more than 10% relative to the previous entry for the same preset, flag the entry and plan an earlier refresh.
+### Logging habits
+- Record PixInsight ImageIntegration stats (mean, median, hot pixel count) for every master and paste the highlights into the table (or link out to a CSV if that’s easier).
+- Drop the PixInsight `.xrs` log path in the Notes column so future you can see the rejection settings.
+- Flag any metric that drifts >10% from the previous entry with the same preset, then plan an early refresh.
 
-## Maintenance
-- Update the table immediately after each calibration session and cross-link commits that introduced new masters.
-- Review calendar reminders each December to confirm they align with the upcoming observing schedule and planned maintenance windows.
+### Ongoing maintenance
+- Update the table right after each calibration session and reference the git commit that introduced the new masters.
+- Each December, double-check the calendar reminders against the coming season’s schedule and maintenance windows.

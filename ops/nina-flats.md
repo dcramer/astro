@@ -1,62 +1,33 @@
 # N.I.N.A. Flats
 
-## Purpose
-Capture the repeatable procedure we use to build calibrated flat-field libraries in N.I.N.A. The workflow assumes a controllable flat panel and leverages the Flat Wizard and trained exposure tables so sequencer jobs can request flats automatically at the end of an imaging run.
+These notes walk through how we shoot panel flats in N.I.N.A. without turning it into a rigid SOP. Bring your flat panel, the Flat Wizard, and a few minutes at the end of an imaging night.
 
-## At a Glance
-- Histogram mean target: 40% (~26,000 ADU on 16-bit cameras) with 10% tolerance for most filters; widen to 15% when sky conditions fluctuate quickly.
-- Exposure guardrails: set the Flat Wizard minimum to 1 s to avoid LED panel banding, allow 2–6 s for broadband, and extend the maximum to 10 s (or more if needed) for 3 nm narrowband filters.
-- Mode selection: use Dynamic Exposure when the panel brightness is fixed, Dynamic Brightness when the panel can dim per filter, and Sky Flats only when the panel is unavailable.
-- Record every successful run in the Trained Flat Exposure table so the Advanced Sequencer and Target Scheduler instructions can reuse the timings per filter, gain, and brightness.
+### Quick hits
+- Aim for a histogram mean near 40 % (~26k ADU on 16‑bit cameras) with ±10 % wiggle room. Bump to ±15 % if the sky or panel drifts fast.
+- Keep exposures ≥1 s so LED banding stays away; broadband usually lands around 2–6 s and narrowband can stretch to 10–20 s.
+- Panel stuck at one brightness? Use Dynamic Exposure. Panel can dim per filter? Switch to Dynamic Brightness. Save Sky Flats for true emergencies.
+- Every successful run should update the Trained Flat Exposure table so the sequencer knows the current timings.
 
-## Prerequisites
-- N.I.N.A. 3.x with the Flat Wizard and Advanced Sequencer enabled; Flat Wizard settings updated for each active filter profile.
-- Flat panel connected over ASCOM (Pegasus Astro FlatMaster driver recommended) or another supported interface with brightness control.
-- Optical train fully assembled as during light acquisition: filters, rotator angle, reducer/flattener spacing, focus position, and dust state untouched since the last imaging session.
-- Dark environment or panel shroud available so ambient light does not leak into the telescope during flats.
-- Staging profile in N.I.N.A. available for validation captures prior to promoting settings to the live automation profile.
+### Before you start
+- N.I.N.A. 3.x with Flat Wizard + Advanced Sequencer enabled (staging profile first, please).
+- Flat panel online via ASCOM (Pegasus FlatMaster works nicely) or your preferred controller.
+- Imaging train untouched since the lights: filters, rotator angle, focus, and dust pattern should all match.
+- Dark room or panel shroud ready so daylight or porch lights don’t leak in.
 
-## Workflow
+### My run flow
+1. **Button up the optics** – Leave the camera at the same cooled setpoint you used for lights. If the panel still forces <1 s exposures, add a diffuser (white acrylic sheet or double T‑shirt layer).
+2. **Dial the panel** – Open Equipment ▸ Flat Panel, confirm the connection, and save brightness levels that yield ≥1 s for broadband and ≥3 s for narrowband. Manual panels: jot the dial values before diving into the wizard.
+3. **Program Flat Wizard** – Launch the wizard in Multi Mode for a full filter sweep or Single Mode for quick touch-ups. Pick Dynamic Exposure or Dynamic Brightness as mentioned above. For each filter, set min exposure = 1 s (raise if banding sticks), max exposure = 6 s broadband / 10–20 s narrowband, mean target = 40 %, tolerance = 10 % (15–20 % if you’re stuck doing sky flats). Enable “Take darks” so matching dark flats follow automatically. Hit Start and watch the histogram—no clipping allowed.
+4. **Let the sequences run** – Each filter typically needs 25–30 frames. When the wizard flips to dark flats, cover or turn off the panel first. After the run, hop into Equipment ▸ Flat Panel ▸ Trained Flat Exposure Times and confirm the table saved the right exposure + brightness. Clean out any oddball entries (different binning, experimental filters) so the sequencer doesn’t chase ghost values.
+5. **Validate + stash** – Inspect a sample flat in the Statistics pane: mean near target, smooth standard deviation, no gradients. If you’ve got time, run a quick calibration stack (lights ▸ flats ▸ dark flats) to confirm vignetting and dust motes vanish without overcorrection. File the flats in the shared calibration library with date, filter, gain, offset, and panel brightness notes, plus mention any sim/live test in the session log.
 
-### 1. Prepare the optical train
-1. Leave the imaging camera cooled to the operating setpoint to match dark-current conditions.
-2. Confirm the focuser has not moved since the last set of lights; refocus only if you will rebuild the entire flat library.
-3. Seal the dew shield with the panel or add a diffuser (white acrylic or double-layer T-shirt) if exposures will still be shorter than 1 s at the lowest panel brightness.
+### Troubleshooting cheat sheet
+- **Banding or stripes** – Stretch exposures past 1 s with extra diffusion or lower panel brightness.
+- **Wizard can’t converge** – Extend max exposure, brighten the panel, or relax tolerance to ~15 %. For sky flats, restart if illumination shifts more than a stop.
+- **Over-corrected lights** – Double-check focus/rotation/filter match and confirm the mean stayed close to 40 %. Make sure the correct dark flats were applied.
+- **Multiple exposures per filter** – Trim stale rows from the Trained Flat Exposure table so Target Scheduler doesn’t request mismatched dark flats.
 
-### 2. Configure the flat panel
-1. Launch the panel’s ASCOM device configuration from N.I.N.A. (Equipment ▸ Flat Panel) and verify connectivity.
-2. Set a per-filter brightness preset if the panel supports it (e.g., Pegasus FlatMaster brightness levels). Save brightness values that yield ≥1 s exposures for broadband and ≥3 s for narrowband filters.
-3. If using a manual brightness control, note the dial positions in the runbook before starting the wizard.
-
-### 3. Program Flat Wizard
-1. Open the Flat Wizard (Imaging ▸ Flats) and select **Multi Mode** when running a full filter set; use **Single Mode** for quick updates.
-2. Select Dynamic Exposure for fixed-brightness panels or Dynamic Brightness for motorised panels. Avoid Sky Flats unless you cannot use a panel; Sky Flats skip dark-flat capture and require monitoring changing sky flux.
-3. For each enabled filter:
-   - Set **Flat Min Exposure** = 1 s; increase to 2 s if residual banding persists.
-   - Set **Flat Max Exposure** = 6 s for broadband, extending to 10–20 s for 3 nm narrowband if the panel is still dim at maximum brightness.
-   - Leave **Histogram Mean Target** at 40% (~26k ADU). For narrowband, accept up to 45% if the panel cannot reach target brightness within max exposure.
-   - Keep **Mean Tolerance** at 10% for panel flats. Increase to 15–20% when taking sky flats to account for changing illumination.
-4. Enable **Take darks** for each exposure time so matching dark flats are acquired immediately after every filter’s flats.
-5. Start the wizard. Monitor the preview histogram; ensure no pixels clip (Max ADU remains below 65,000 on 16-bit sensors).
-
-### 4. Capture and record flats
-1. Once the wizard locks in an exposure, let it complete the requested number of flats (typically 25–30 per filter).
-2. When prompted, cover the panel (or turn it off) before the dark-flat sequence begins.
-3. After the run, navigate to Equipment ▸ Flat Panel ▸ **Trained Flat Exposure Times** and confirm the wizard stored the exposure and brightness per filter. Edit any entries that relied on temporary adjustments (e.g., alternate binnings) so the sequencer references the correct values.
-4. Update Target Scheduler or Advanced Sequencer templates to call the trained flat exposure instruction for each filter set, ensuring future sessions reuse the calibrated timings automatically.
-
-### 5. Validate and archive
-1. Spot-check a representative flat in N.I.N.A.’s image statistics: verify the mean matches the target, standard deviation is smooth, and no banding is visible when auto-stretched.
-2. Calibrate a sample stack (lights ▸ flats ▸ dark flats) in your processing workflow or staging profile to confirm vignetting and dust motes disappear without introducing over-correction halos.
-3. Store the new flats in the shared calibration library with date, filter, gain, offset, and panel brightness metadata. Note any simulator or live-test results in the session log.
-
-## Troubleshooting
-- **Banding or striping in flats** – Ensure exposures stay above 1 s; add additional diffusion or reduce panel brightness so the wizard lengthens the exposure. Persistent banding usually indicates the panel is still too bright at the minimum level.
-- **Wizard loops without converging** – Expand the maximum exposure limit, raise panel brightness, or relax tolerance to 15%. For sky flats, restart the wizard if the illumination has changed more than one stop.
-- **Over-correction in calibrated lights** – Recheck that flats were captured at the same focus, rotation, and filter as the lights. Verify mean ADU stayed near the 40% target and that the corresponding dark flats were applied.
-- **Multiple exposure values per filter** – Delete stale rows in the Trained Flat Exposure table so Target Scheduler does not request mismatched dark flats. Keep only the current exposure/brightness pair.
-
-## References
-- Nighttime Imaging 'N' Astronomy Documentation, “Flat Wizard” and “Flat Panel,” accessed 23-Sep-2025.
-- Pegasus Astro, “Flat Calibration Frames Howto,” published 26-Jul-2024.
-- Target Scheduler Documentation, “Target Scheduler Flats,” accessed 23-Sep-2025.
+### References to keep handy
+- [Nighttime Imaging 'N' Astronomy docs: “Flat Wizard” + “Flat Panel”](https://nighttime-imaging.eu/docs/) (accessed 2025-09-23).
+- [Pegasus Astro: “Flat Calibration Frames Howto”](https://pegasusastro.com/) (published 2024-07-26).
+- [Target Scheduler docs: “Target Scheduler Flats”](https://nighttime-imaging.eu/docs/) (accessed 2025-09-23).

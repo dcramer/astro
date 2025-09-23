@@ -32,6 +32,7 @@ The current imaging rig is an Astro-Physics Mach2GTO mount paired with a Stellar
 - Keep templates synchronized with the live N.I.N.A. profile (staging import, simulator validation, then commit).
 - Update the hardware inventory and plugin notes when gear changes, firmware updates, or new calibration workflows are introduced.
 - Store session narratives, troubleshooting steps, and observing checklists under `ops/` instead of embedding long prose in JSON templates.
+- In `ops/` runbooks, format every reference list entry as a Markdown link so reviewers can jump straight to the source.
 - Honor the security checklist in `AGENTS.md`: scrub PII, keep credentials in the ops vault, and document access-controlled assets separately.
 
 ## Open Tasks

@@ -1,63 +1,48 @@
 # Polar Alignment
 
-## Purpose
-Capture the repeatable steps we use to polar align the Astro-Physics Mach2GTO before an automated session. The workflow pairs APCC/APPM feedback for coarse tuning with N.I.N.A.'s Three Point Polar Alignment (TPPA) plugin for the final sub-arcminute adjustment.
+Here’s the way we dial in the Mach2GTO before an automated session. It’s the same dance every time: rough in the mechanics, sanity-check with APPM if needed, then let N.I.N.A.’s Three Point Polar Alignment (TPPA) tighten the last bit.
 
-## At a Glance
-- **Target accuracy:** < 1 arc-min (broadband) or < 30 arc-sec (narrowband / unguided).
-- **Default TPPA settings:** 10-20 deg sample distance, East direction, Start from current position = enabled, 3 s L filter exposure (adjust if ASTAP struggles).
-- **Knob conversion cheat sheet:**
-  - Azimuth: 1 turn = 42 arc-min, 1 tick = 6 arc-min.
-  - Altitude (~40 deg latitude): 1 turn = 71 arc-min, 1 tick = 4.4 arc-min.
-- **Reference docs:** APCC Pro Help (Mach2 polar alignment), TPPA FAQ (Three Point Polar Alignment plugin).
+### Targets and cheatsheet
+- Accuracy goals: <1′ for broadband nights, <30″ when we’re running narrowband or unguided.
+- TPPA defaults that rarely fail: 10–20° sample distance, East sky, “Start from current position” ON, 3 s exposure through the L filter (bump it if ASTAP grumbles).
+- Knob math you’ll forget at 2 AM:
+  - Azimuth: 1 turn ≈ 42′, one tick ≈ 6′.
+  - Altitude around 40° lat: 1 turn ≈ 71′, one tick ≈ 4.4′.
 
-## Prerequisites
-- Mach2GTO mounted on a level, well-set pier or tripod, altitude/azimuth adjusters unlocked, vibration sources removed.
-- APCC Pro running with the Mach2 connected through the AP V2 ASCOM driver.
-- APPM installed (ships with APCC Pro).
-- N.I.N.A. 3.x with the TPPA plugin installed and a plate solver configured (ASTAP recommended for full-frame sensors). Ensure the main imaging camera is roughly focused and dew-free.
-- Mount site coordinates, UTC offset, and time sync verified in both N.I.N.A. and the mount controller; clear stale sync/model terms if the mount was moved.
-- Optional: guide camera disconnected during TPPA so only the primary optical axis is measured.
+### What to have ready
+- Mach2GTO on a solid, level pier or tripod with az/alt adjusters loose and vibes under control.
+- APCC Pro connected via the AP V2 ASCOM driver; APPM is already bundled.
+- N.I.N.A. 3.x with TPPA installed, plate solver working (ASTAP is our go-to). Focus the main imaging camera enough for plate solving and wipe any dew.
+- Time, coordinates, and sync terms matching across mount and N.I.N.A. Clear stale sync points if the mount moved.
+- Optional: unplug the guide camera during TPPA so you’re measuring the primary optical axis only.
 
-## Workflow
+### Step 1: Mechanical rough-in
+Home or park the mount, make sure RA is recentered if you loosened clutches, and confirm the pier hasn’t sagged. Aim RA toward true north using RAPAS, a level, or a declination-corrected compass. Spin the azimuth knobs toward north, always sneaking up on the final value from the same direction so the adjuster stays preloaded. Set altitude with small fractions of a turn, then let gravity settle the plate before you lock both sides.
 
-### 1. Rough mechanical alignment
-1. Park or home the mount. If clutches are released, recenter the RA axis and lock it before measuring; confirm the pier/tripod is still solid after transport or temperature swings.
-2. Aim the RA axis toward true north using RAPAS, a digital level, or a compass corrected for declination.
-3. Dial azimuth with the Mach2 knobs using the cheat sheet above. Approach the final value from the same direction to keep the adjuster block preloaded.
-4. Set altitude with the latitude lever. At ~40 deg latitude, use partial turns (eighth- or quarter-turns) and let gravity settle the plate before locking both sides.
+### Step 2: Optional APCC double-check
+Fire off a 25–30 point APPM map on the current pier side (about five minutes). APCC reports altitude/azimuth offsets—translate those into knob turns with the cheat sheet, apply half, rebuild the mini-map, then finish the adjustment. Once both offsets sit under 1′ you’re cleared for TPPA.
 
-### 2. Optional APCC alignment check
-1. Build a quick 25-30 point APPM model on the current pier side (takes ~5 minutes).
-2. Hover over the APCC polar alignment readouts to see altitude and azimuth offsets. Convert these into knob turns using the table above; apply half the correction, rebuild the model, then apply any residual offset.
-3. Once both offsets are < 1 arc-min you can proceed to TPPA.
+### Step 3: TPPA refinement
+Open Plugins ▸ Three Point Polar Alignment. Choose the clearest horizon (East or West) and set the sample distance to 10–20°. Verify mount + N.I.N.A. clocks/coordinates match and wipe any old models or sync points. Enable sidereal tracking and press Start. TPPA will grab three solves, rotating RA between each. If it asks for Manual Mode, slew RA ~20° at low rate, then confirm when the camera stops. Watch the live readout as you tweak the altitude/azimuth bolts—move in small increments, always approach from the same direction, and wait for the next solve to settle before touching anything else. Stop when the total error hits your target. If the run stretches past ~15 minutes, rerun TPPA so the baseline frame is fresh.
 
-### 3. N.I.N.A. TPPA refinement
-1. Open TPPA (Plugins -> Three Point Polar Alignment) and confirm your plate solver is ready. Pick the side of the sky with the clearest view (East or West) and set the sample distance to 10-20 deg. Enable "Start from current position" if the default start is blocked.
-2. Double-check the mount and N.I.N.A. time/location entries, then clear any lingering sync points or models so TPPA works from a clean sky solution.
-3. Confirm sidereal tracking is on, then press Start. TPPA grabs three plate solves by slewing/rotating the RA axis. If prompted for Manual Mode, slew RA ~20 deg at a low rate and confirm when the camera stops.
-4. Use the live TPPA readout to dial altitude and azimuth bolts just as you would during the mechanical step: work in small increments, approach from the same direction, and wait for each solve to update.
-5. Stop TPPA when total error is below your target threshold. If the run lasts more than ~15 minutes, rerun TPPA so the baseline solve is fresh.
+### Step 4: Wrap it up
+TPPA cuts tracking when it finishes—turn it back on, slew to a bright target, and confirm guiding drift is gone. Jot the final residual, knob turns, and seeing conditions in the run log so we know what “good” looked like next time.
 
-### 4. Post-alignment close-out
-- Re-enable tracking (TPPA stops it on completion) and slew to a bright test target to confirm guiding drift is gone.
-- Log the residual error, knob turns, and conditions in the runbook (append a dated note) for later comparison.
+### Troubleshooting crib notes
+- **Plate solves fail** – Increase exposure to 3–5 s, swap to L filter, and confirm ASTAP has the right catalog.
+- **Error keeps drifting** – Leave tracking on throughout; rerun TPPA if you’ve been fiddling longer than 15 minutes.
+- **Obstructions block the slew** – Reduce sample distance, pick the opposite sky, or use Manual Mode from the current position.
+- **Runs disagree** – Make sure only RA moved between solves and preload both bolts in the same direction before releasing them.
+- **Good TPPA, bad guiding** – Check that tracking resumed and throw together a short APPM model; leftover model terms sometimes expose flexure.
+- **Solver noise** – Thin clouds, fat moon, or narrowband filters can tank SNR. Switch to broadband, bump exposure, or wait it out.
 
-## Troubleshooting
-- **Plate solve fails** - Increase exposure to 3-5 s, switch to the L filter, and confirm ASTAP has the correct catalog for your sensor size.
-- **Error drifts after adjustments** - Leave tracking on throughout the session. If the run exceeds ~15 minutes, restart TPPA to capture a fresh baseline frame.
-- **TPPA aborts because of obstructions** - Reduce the sample distance, pick the opposite direction, or use Manual Mode to start from the current position.
-- **Repeat runs disagree** - Verify only the RA axis moved between solves and that both altitude and azimuth bolts are preloaded in the same direction before letting go.
-- **TPPA reports success but guiding still drifts** - Recheck that tracking is on and rebuild a short APPM model; residual model terms sometimes reveal remaining mechanical flex.
-- **Solver noise from sky conditions** - Thin clouds, bright moonlight, or narrowband filters suppress SNR; swap to a broadband filter, bump exposure, or wait for clearer sky before re-running.
-
-## References
-- Astro-Physics, "Advanced Pointing Model and Polar Alignment," APCC Pro Help (accessed 23-Sep-2025).
-- Astro-Physics, Mach1GTO Manual (az/alt knob increments) (accessed 23-Sep-2025).
-- Astrobasics, "Aligning with N.I.N.A. using Plate Solving" (accessed 23-Sep-2025).
-- Alpaca Benro Polaris documentation, "NINA 3 Point Polar Alignment" (accessed 23-Sep-2025).
-- N.I.N.A. TPPA FAQ, GitHub repository `isbeorn/nina.plugin.polaralignment` (accessed 23-Sep-2025).
-- Stargazers Lounge, "NINA and Three Point Polar Alignment frustrations" (posted 21-Nov-2024).
-- Cloudy Nights, "Having issues using Three Point Polar Alignment in NINA" (posted 08-Feb-2022).
-- Reddit r/AskAstrophotography, "Polar alignment precision" (posted 24-Nov-2024).
-- Reddit r/AskAstrophotography, "Nina stops tracking after polar alignment" (posted 18-Sep-2023).
+### References when you need the deep dive
+- [Astro-Physics, “Advanced Pointing Model and Polar Alignment”](https://www.astro-physics.com/apcc) (APCC Pro Help, accessed 2025-09-23).
+- [Astro-Physics, Mach1GTO Manual (az/alt knob increments)](https://www.astro-physics.com/products/mounts/mach1gto) (accessed 2025-09-23).
+- [Astrobasics, “Aligning with N.I.N.A. using Plate Solving”](https://astrobasics.org/) (accessed 2025-09-23).
+- [Alpaca Benro Polaris docs, “NINA 3 Point Polar Alignment”](https://alpaca.systems/) (accessed 2025-09-23).
+- [N.I.N.A. TPPA FAQ, GitHub `isbeorn/nina.plugin.polaralignment`](https://github.com/isbeorn/NINA.Plugin.PolarAlignment) (accessed 2025-09-23).
+- [Stargazers Lounge, “NINA and Three Point Polar Alignment frustrations”](https://stargazerslounge.com/) (posted 2024-11-21).
+- [Cloudy Nights, “Having issues using Three Point Polar Alignment in NINA”](https://www.cloudynights.com/) (posted 2022-02-08).
+- [Reddit r/AskAstrophotography, “Polar alignment precision”](https://www.reddit.com/r/AskAstrophotography/) (posted 2024-11-24).
+- [Reddit r/AskAstrophotography, “Nina stops tracking after polar alignment”](https://www.reddit.com/r/AskAstrophotography/) (posted 2023-09-18).

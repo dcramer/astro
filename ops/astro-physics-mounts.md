@@ -1,27 +1,27 @@
 # Astro-Physics Mount Configuration Notes
 
-These notes capture the settings we rely on when integrating Astro-Physics mounts with N.I.N.A., based on Dale Ghent's reference guide and our Mach2GTO setup.
+Here’s the short list of settings that keep our Mach2GTO happy inside N.I.N.A. Most of it echoes Dale Ghent’s excellent write-up, trimmed to what we actually use night to night.
 
-## Control Software Stack
-- **APCC Pro** (v1.9.2.5 or later) running with "NINA Camera Support" and "Decision Tracking" licenses enabled. Ensure APCC is started before N.I.N.A. so the GTOCP5 controller is online.
-- **APPM** All-Sky modelling utility for periodic pointing model maintenance; launched via the Astro-Physics Tools sequencer instructions.
-- **N.I.N.A.** 3.x with the **SGP Server Emulation** plugin loaded to expose the legacy SGPro camera API that APCC/APPM expect.
+### Control stack
+- APCC Pro v1.9.2.5+ with the “NINA Camera Support” + “Decision Tracking” licenses. Launch APCC before N.I.N.A. so the GTOCP5 is awake.
+- APPM for pointing models, usually triggered through the Astro-Physics Tools plugin blocks.
+- N.I.N.A. 3.x with the SGP Server Emulation plugin (lets APCC/APPM talk to the camera through the legacy API they expect).
 
-## Connectivity & Driver Settings
-- Serial/Ethernet connection uses **AP V2 ASCOM driver** in "Advanced" mode with pulse guiding enabled; set the same COM port or IP that APCC uses.
-- Under APCC, configure "PointXP" to accept APPM uploads automatically and enable "Side of Pier" checks so advanced sequencer slews honor meridian constraints.
-- Keep "Unpark on Connect" disabled; N.I.N.A. handles unparking inside the setup templates.
+### Connectivity + driver bits
+- Run the AP V2 ASCOM driver in Advanced mode with pulse guiding enabled. Match the COM/IP to whatever APCC is using so both apps talk to the same controller.
+- Inside APCC, turn on PointXP auto-accept for APPM uploads and keep “Side of Pier” checks enabled so sequencer slews respect the meridian rules.
+- Leave “Unpark on Connect” off—our setup templates handle unparking safely.
 
-## Sequencer Integration
-- Use the **Astro-Physics Tools** plugin blocks (`Start APCC`, `Create All-Sky Model`, `Create Dec Arc Model`, `Park Mount`) instead of manual scripting so APCC/APPM calls log telemetry and respect safety interlocks.
-- Place APPM modelling sequences in `nina/templates/3. Misc` and archive the resulting `.apm` configuration under `ops/` next to session notes for reproducibility.
+### Sequencer integration
+- Lean on the Astro-Physics Tools plugin instructions (`Start APCC`, `Create All-Sky Model`, `Create Dec Arc Model`, `Park Mount`) instead of scripting raw calls. They log telemetry and honour interlocks.
+- File the APPM-focused templates under `nina/templates/3. Misc` and stash exported `.apm` configs in `ops/` next to the session notes.
 
-## Operational Practices
-- Refresh the pointing model seasonally or after major hardware changes to keep automation accurate; log APPM run parameters in commit messages.
-- Monitor encoder temperature and motor current in APCC during long runs; add Ground Station alerts if thresholds are exceeded.
-- Keep the Mach2's power supply in the 13.8-15 V range when slewing with heavy payloads to avoid undervoltage errors.
+### Operational habits
+- Refresh the pointing model at least once per season or after hardware changes; note APPM parameters in commits for traceability.
+- Watch encoder temperature + motor current in APCC on long runs. Queue Ground Station alerts if you see trends.
+- Keep the Mach2 supply between 13.8 V and 15 V, especially when slewing heavy payloads, to avoid undervoltage hiccups.
 
-Update this checklist whenever firmware revisions or APCC/APPM workflows change.
+Ping this file when firmware or APCC/APPM workflows change.
 
-## References
-- Dale Ghent, "N.I.N.A. and Astro-Physics Mounts," accessed September 23, 2025. <https://daleghent.com/nina-and-astro-physics-mounts>
+### Reference
+- Dale Ghent, “N.I.N.A. and Astro-Physics Mounts,” accessed 2025-09-23.
