@@ -267,17 +267,6 @@ export default async function Page() {
   });
 
   const availableFilters = Array.from(filterTotals.keys());
-  const normalizedFilters = availableFilters.map((filter) => filter.toLowerCase());
-
-  const hasHa = normalizedFilters.includes("ha");
-  const hasSii = normalizedFilters.some((filter) =>
-    ["sii", "s-ii", "s2"].includes(filter),
-  );
-  const hasOiii = normalizedFilters.some((filter) =>
-    ["oiii", "o-iii"].includes(filter),
-  );
-  const hasNarrowband = hasHa && hasSii && hasOiii;
-  const hasRGB = ["r", "g", "b"].every((key) => normalizedFilters.includes(key));
 
   const getGroupTotals = (keys: string[], displayLabel: string) => {
     let count = 0;
@@ -295,21 +284,21 @@ export default async function Page() {
     }
 
     return {
-      label: `Filter ${displayLabel}`,
+      label: displayLabel,
       value: `${count} subs · ${formatDuration(durationSeconds)}`,
     };
   };
 
   const narrowbandGroups = [
-    { keys: ["ha"], label: "Ha" },
-    { keys: ["sii", "s-ii", "s2"], label: "SII" },
-    { keys: ["oiii", "o-iii"], label: "OIII" },
+    { keys: ["ha"], label: "Hα (Hydrogen Alpha)" },
+    { keys: ["sii", "s-ii", "s2"], label: "SII (Sulfur-II)" },
+    { keys: ["oiii", "o-iii"], label: "OIII (Oxygen-III)" },
   ];
 
   const rgbGroups = [
-    { keys: ["r"], label: "R" },
-    { keys: ["g"], label: "G" },
-    { keys: ["b"], label: "B" },
+    { keys: ["r"], label: "R (Red)" },
+    { keys: ["g"], label: "G (Green)" },
+    { keys: ["b"], label: "B (Blue)" },
   ];
 
   const narrowbandStats = narrowbandGroups
@@ -320,11 +309,14 @@ export default async function Page() {
     .map(({ keys, label }) => getGroupTotals(keys, label))
     .filter((item): item is { label: string; value: string } => item !== null);
 
+  const hasAnyNarrowband = narrowbandStats.length > 0;
+  const hasAllRGB = rgbStats.length === rgbGroups.length;
+
   let filterStats: { label: string; value: string }[];
 
-  if (narrowbandStats.length > 0) {
+  if (hasAnyNarrowband) {
     filterStats = narrowbandStats;
-  } else if (rgbStats.length === rgbGroups.length) {
+  } else if (hasAllRGB) {
     filterStats = rgbStats;
   } else {
     filterStats = availableFilters
@@ -333,8 +325,17 @@ export default async function Page() {
         if (!totals) {
           return null;
         }
+
+        let friendlyName = filter;
+        const normalized = filter.toLowerCase();
+        if (normalized === "d" || normalized === "dark" || normalized === "darks") {
+          friendlyName = "Darks (Calibration)";
+        } else if (["l", "lum", "luminance"].includes(normalized)) {
+          friendlyName = "L (Luminance)";
+        }
+
         return {
-          label: `Filter ${filter}`,
+          label: friendlyName,
           value: `${totals.count} subs · ${formatDuration(totals.durationSeconds)}`,
         };
       })
