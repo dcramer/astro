@@ -1,0 +1,212 @@
+.overlay {
+  position: relative;
+  width: 1600px;
+  height: 900px;
+  padding: 20px;
+  background: transparent;
+  --bg-panel: #091124;
+  --bg-panel-accent: radial-gradient(circle at 20% 20%, rgba(59, 130, 246, 0.85), rgba(15, 23, 42, 0.95));
+  --bg-chip: rgba(9, 20, 38, 0.9);
+  --border-soft: rgba(148, 197, 255, 0.32);
+  --border-strong: rgba(94, 234, 212, 0.45);
+  --text-soft: rgba(148, 197, 255, 0.78);
+  --text-strong: #e6f6ff;
+  --text-muted: rgba(203, 213, 225, 0.75);
+  color: var(--text-strong);
+  font-family: var(--font-geist-sans, 'Segoe UI', sans-serif);
+  pointer-events: none;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 352px 1fr;
+  gap: 20px;
+  width: 100%;
+  height: 100%;
+  align-items: start;
+}
+
+.leftSide {
+  width: 352px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  pointer-events: auto;
+}
+
+.thumbnail {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  background: #050b15;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
+
+.thumbnailSquare {
+  aspect-ratio: 1;
+}
+
+.thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.thumbnailFallback {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 12px;
+}
+
+.targetCard {
+  width: 100%;
+  padding: 10px 0 0;
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.targetLabel {
+  font-size: 0.8rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: rgba(226, 232, 240, 0.8);
+}
+
+.targetName {
+  font-size: 3.2rem;
+  font-weight: 700;
+  color: white;
+  margin: 0;
+  line-height: 1.1;
+}
+
+.topStats {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+  pointer-events: auto;
+}
+
+.statRow {
+  flex: 1;
+  display: flex;
+  gap: 40px;
+  align-items: stretch;
+  flex-wrap: wrap;
+  overflow: hidden;
+}
+
+.statRow > * {
+  height: 100%;
+}
+
+.statCard {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 4px;
+  padding: 0;
+  background: transparent;
+  min-width: 110px;
+  max-width: 220px;
+}
+
+.statLabel {
+  font-size: 0.6rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.statValue {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text-strong);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.latestCard {
+  margin-top: 5px;
+  width: 100%;
+  padding: 0;
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  pointer-events: auto;
+}
+
+.statRowTarget {
+  gap: 40px;
+}
+
+.statRowTarget .targetCard {
+  width: 100%;
+}
+
+.latestHeading {
+  font-size: 0.75rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.latestTitle {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-strong);
+  margin: 0 0 20px;
+}
+
+.latestMeta {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+.latestMetrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 14px;
+}
+
+.latestMetric {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.latestMetricLabel {
+  font-size: 0.58rem;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--text-muted);
+}
+
+.latestMetricValue {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-strong);
+}
+
+@media (max-width: 960px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+
+  .leftSide,
+  .thumbnail,
+  .latestCard {
+    width: 100%;
+  }
+
+  .topStats {
+    height: auto;
+  }
+}
