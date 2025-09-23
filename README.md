@@ -5,7 +5,7 @@ This repository tracks everything needed to reproduce our automated deep-sky ima
 ## Repository Layout
 - `nina/templates/` - Advanced Sequencer exports pulled straight from N.I.N.A.
 - `nina/plugins/` - How we configure each plugin and the reminders we need when reinstalling.
-- `nina/ops/` - Runbooks tied to N.I.N.A. operations (mount setup, automation SOPs, troubleshooting).
+- `ops/` - Runbooks covering night-to-night operations, mount setup, troubleshooting, and import/export SOPs.
 - `pixinsight/` - Stacking and post-processing workflows executed in PixInsight.
 - `hardware/` - Imaging rig specifications, spacing budgets, and filter notes.
 - `horizons/` - Site-specific horizon masks (`.hrz`) and capture instructions.
@@ -15,8 +15,8 @@ Follow the guidance in `AGENTS.md` before contributing; most importantly, never 
 - ## Key References
 - [Template Library](nina/templates/README.md) - export/import workflow and Template by Reference upkeep.
 - [Plugin Library](nina/plugins/README.md) - current plugin roster, integration notes, and links to official docs.
-- [Astro-Physics Mount Notes](nina/ops/astro-physics-mounts.md) - APCC/APPM integration specifics for the Mach2GTO.
-- [Polar Alignment Runbook](nina/ops/polar-alignment.md) - combined Mach2 alignment and N.I.N.A. TPPA workflow.
+- [Astro-Physics Mount Notes](ops/astro-physics-mounts.md) - APCC/APPM integration specifics for the Mach2GTO.
+- [Polar Alignment Runbook](ops/polar-alignment.md) - combined Mach2 alignment and N.I.N.A. TPPA workflow.
 - [PixInsight SHO Processing Guide](pixinsight/sho-processing.md) - stacking and post-processing workflow for narrowband data.
 - [PixInsight OSC Processing Guide](pixinsight/osc-processing.md) - stacking and post-processing workflow for one-shot color data.
 - [Hardware Inventory](hardware/README.md) - mount, optics, camera train, and filter specifications with derived imaging metrics.
@@ -31,7 +31,7 @@ The current imaging rig is an Astro-Physics Mach2GTO mount paired with a Stellar
 ## Operating Notes
 - Keep templates synchronized with the live N.I.N.A. profile (staging import, simulator validation, then commit).
 - Update the hardware inventory and plugin notes when gear changes, firmware updates, or new calibration workflows are introduced.
-- Store session narratives, troubleshooting steps, and observing checklists under `nina/ops/` instead of embedding long prose in JSON templates.
+- Store session narratives, troubleshooting steps, and observing checklists under `ops/` instead of embedding long prose in JSON templates.
 - Honor the security checklist in `AGENTS.md`: scrub PII, keep credentials in the ops vault, and document access-controlled assets separately.
 
 ## Open Tasks

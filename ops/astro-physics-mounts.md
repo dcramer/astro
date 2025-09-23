@@ -14,7 +14,7 @@ These notes capture the settings we rely on when integrating Astro-Physics mount
 
 ## Sequencer Integration
 - Use the **Astro-Physics Tools** plugin blocks (`Start APCC`, `Create All-Sky Model`, `Create Dec Arc Model`, `Park Mount`) instead of manual scripting so APCC/APPM calls log telemetry and respect safety interlocks.
-- Place APPM modelling sequences in `nina/templates/3. Misc` and archive the resulting `.apm` configuration under `nina/ops/` next to session notes for reproducibility.
+- Place APPM modelling sequences in `nina/templates/3. Misc` and archive the resulting `.apm` configuration under `ops/` next to session notes for reproducibility.
 
 ## Operational Practices
 - Refresh the pointing model seasonally or after major hardware changes to keep automation accurate; log APPM run parameters in commit messages.

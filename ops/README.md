@@ -1,7 +1,7 @@
-# N.I.N.A. Operations Guides
+# Operations Guides
 
 ## Purpose
-Capture runbooks and procedures specific to our N.I.N.A. automation stack so operators can rebuild or debug workflows quickly.
+Capture runbooks and procedures that keep the automation stack (N.I.N.A., APCC/APPM, ancillary scripts) reproducible and easy to troubleshoot.
 
 ## Contents
 - **astro-physics-mounts.md** - APCC/APPM integration checklist for the Mach2GTO.

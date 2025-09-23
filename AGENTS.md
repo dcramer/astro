@@ -2,7 +2,7 @@
 
 ## Project Structure & Module Organization
 - `nina/templates/` mirrors the N.I.N.A. library: `1. Setup`, `2. Targets`, `3. Misc`, and `4. Blocks`. Match the in-app folder names so exported JSON round-trips cleanly.
-- `nina/ops/` stores runbooks tied to the N.I.N.A. automation stack (observing checklists, troubleshooting notes, import/export SOPs).
+- `ops/` stores shared runbooks (observing checklists, troubleshooting notes, import/export SOPs).
 - `nina/plugins/` contains plugin briefs; see `nina/plugins/sequencer-powerups.md` for an example.
 - `hardware/` documents the physical rig, spacing budgets, and filter details needed across all tooling.
 

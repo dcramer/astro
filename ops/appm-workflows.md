@@ -34,7 +34,7 @@ This runbook captures the workflows we follow when building, verifying, and trou
 5. **Run a 5x verify**: Repeat the verify set five times to confirm whether the outliers are repeatable (mechanical) or random (environmental) before the next full mapping run ([Astro-Physics](https://www.apastrosoftware.com/help/apcc-pro/appm_run_menu.htm)).
 
 ## Recording Results
-- Document model date, time, point count, pier sides, verify statistics (mean and max RA/Dec delta), polar adjustments, and any mechanical fixes. Store APPM logs and APCC model files under `nina/ops/` for traceability ([Astro-Physics](https://www.apastrosoftware.com/help/apcc-pro/appm_overview.htm)).
+- Document model date, time, point count, pier sides, verify statistics (mean and max RA/Dec delta), polar adjustments, and any mechanical fixes. Store APPM logs and APCC model files under `ops/` for traceability ([Astro-Physics](https://www.apastrosoftware.com/help/apcc-pro/appm_overview.htm)).
 - Log unguided exposure tests and residual summaries in session notes so regressions are easy to spot in future seasons ([Sirius Imaging](https://www.siriusimaging.com/Help/APCC/features.htm)).
 
 ## References
