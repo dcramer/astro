@@ -1,6 +1,6 @@
 # N.I.N.A. Session Overlay
 
-SSR overlay that renders live metrics from the N.I.N.A. Web Session History Viewer plugin for streaming scenes (OBS, Twitch studio, etc.). Drop it in as a 1928×900 transparent browser source and layer your RTSP feed beneath it—the overlay keeps a compact top-left stack (thumbnail + target card + exposure summary) with a 125 px stat bar to the right. Everything below remains transparent so your imaging feed fills the scene.
+SSR overlay that renders live metrics from the N.I.N.A. Web Session History Viewer plugin for streaming scenes (OBS, Twitch studio, etc.). Drop it in as a 1600×900 transparent browser source and layer your RTSP feed beneath it—the overlay keeps a compact top-left stack (thumbnail + target card + exposure summary) with a 125 px stat bar to the right. Everything below remains transparent so your imaging feed fills the scene.
 
 ## Prerequisites
 - N.I.N.A. Web Session History Viewer plugin enabled and reachable from the overlay host.
