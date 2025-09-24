@@ -12,6 +12,7 @@ Centralize everything we need to reinstall or update the plugins that support ou
 | Plug-in | Docs | Purpose / Notes |
 |---------|------|-----------------|
 | Sequencer Powerups | [Notes](sequencer-powerups.md) / [Docs](https://marcblank.github.io/) | Template by Reference, safety triggers, extended instructions. |
+| Target Scheduler | [Notes](target-scheduler.md) / [Docs](https://tcpalmer.github.io/nina-scheduler/) | Dynamic dispatch scheduling with scoring for visibility, moon avoidance, and project priorities. |
 | Astro-Physics Tools | [Notes](astro-physics-tools.md) / [Docs](https://daleghent.com/astro-physics-tools/) | Automates APCC/APPM model building inside sequences. |
 | Ground Station | [Notes](ground-station.md) / [Docs](https://daleghent.com/ground-station/) | Monitors capture status and pushes alerts/telemetry to remote dashboards. |
 | Hocus Focus | [Notes](hocus-focus.md) / [Docs](https://patriotastro.github.io/NINA_Plugins/HocusFocus.html) | Multi-star autofocus with detailed diagnostics. |
@@ -49,4 +50,5 @@ Use Ground Station message instructions to push alerts to Pushover, Telegram, MQ
 - Nighttime Imaging 'N' Astronomy, "N.I.N.A. 3.0.0.1005 Beta Release Notes," accessed September 23, 2025. <https://nighttime-imaging.eu/news/2024/05/09/n.i.n.a.-3.0.0.1005-beta-release-notes/>
 - tcpalmer, "Shutdown PC Plugin Releases," GitHub repository, accessed September 23, 2025. <https://github.com/tcpalmer/NINA.Plugin.ShutdownPC/releases>
 - Polo65, "Three Point Polar Alignment Documentation," accessed September 23, 2025. <https://doc.polo65.net/NINA-TPPA/>
+- tcpalmer, "Target Scheduler Plugin Documentation," accessed September 24, 2025. <https://tcpalmer.github.io/nina-scheduler/>
 - tcpalmer, "Web Session History Viewer Plugin," GitHub repository, accessed September 23, 2025. <https://github.com/tcpalmer/NINA.Plugin.WebSessionHistoryViewer>
