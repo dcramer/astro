@@ -15,7 +15,7 @@ import {
   formatCameraStatus,
   formatMountDisplay,
   formatAmbientTemperature,
-  formatWeatherDisplay,
+  formatSkyQuality,
   formatSequenceProgressSuffix,
   formatSequenceStatus,
   getRemainingSeconds,
@@ -115,17 +115,6 @@ export default function OverlayDisplay({
       ? undefined
       : <StatValue>{cameraData ? formatCameraStatus(cameraData, now, null) : "—"}</StatValue>,
     progressPercent: cameraProgress?.percent,
-    progressCaption: cameraProgress
-      ? (
-          <>
-            <span>{`${Math.round(cameraProgress.percent * 100)}%`}</span>
-            {cameraProgress.remainingSeconds !== null &&
-            cameraProgress.remainingSeconds !== undefined ? (
-              <span>{formatDuration(cameraProgress.remainingSeconds)}</span>
-            ) : null}
-          </>
-        )
-      : undefined,
     cardClassName: styles.statCardCamera,
   };
 
@@ -146,7 +135,7 @@ export default function OverlayDisplay({
     label: "Sky Quality",
     value: (
       <StatValue className={styles.statValueWrap}>
-        {formatWeatherDisplay(weatherInfo, { connectionOffline, hasConnected })}
+        {formatSkyQuality(weatherInfo, { connectionOffline, hasConnected })}
       </StatValue>
     ),
     cardClassName: styles.statCardSkyQuality,

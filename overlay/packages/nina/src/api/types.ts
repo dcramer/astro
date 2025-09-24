@@ -279,4 +279,5 @@ export interface NinaImageHistoryEntry {
   readonly hfr: number | null;
   readonly isBayered: boolean;
   readonly cameraTemperature?: number | null;
+  readonly targetName?: string | null;
 }

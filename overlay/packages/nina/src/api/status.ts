@@ -1,9 +1,16 @@
 import { getNinaAdvancedApiBaseUrl } from "../config";
-import type { NinaAdvancedStatus, RawCameraInfo, RawSequenceItem } from "./types";
+import type {
+  NinaAdvancedStatus,
+  NinaCameraSnapshot,
+  NinaSequenceItem,
+  NinaSequenceSnapshot,
+  RawCameraInfo,
+  RawSequenceItem,
+} from "./types";
 import { fetchAdvancedResponse } from "./client";
 import { toNumber, toPositiveNumber } from "./utils";
 
-function transformSequenceItem(raw: RawSequenceItem) {
+function transformSequenceItem(raw: RawSequenceItem): NinaSequenceItem {
   const {
     Name,
     Description,
@@ -53,7 +60,10 @@ function transformSequenceItem(raw: RawSequenceItem) {
   };
 }
 
-function findRunningItem(items: ReadonlyArray<ReturnType<typeof transformSequenceItem>> | undefined, path: ReadonlyArray<string> = []) {
+function findRunningItem(
+  items: ReadonlyArray<NinaSequenceItem> | undefined,
+  path: ReadonlyArray<string> = [],
+): { node: NinaSequenceItem; path: ReadonlyArray<string> } | null {
   if (!items?.length) {
     return null;
   }
@@ -73,7 +83,7 @@ function findRunningItem(items: ReadonlyArray<ReturnType<typeof transformSequenc
   return null;
 }
 
-function transformCameraInfo(raw: RawCameraInfo | null | undefined) {
+function transformCameraInfo(raw: RawCameraInfo | null | undefined): NinaCameraSnapshot | null {
   if (!raw) {
     return null;
   }
@@ -113,26 +123,24 @@ export async function loadAdvancedStatus(): Promise<NinaAdvancedStatus> {
   const sequenceItems = sequenceRaw?.map(transformSequenceItem) ?? [];
   const running = findRunningItem(sequenceItems);
 
+  const sequenceSnapshot: NinaSequenceSnapshot | null = sequenceRaw
+    ? {
+        items: sequenceItems,
+        isRunning: Boolean(running),
+        runningItemName: running?.node.name ?? null,
+        runningPath: running?.path,
+        breadcrumb: running?.path ?? null,
+      }
+    : null;
+
+  const cameraSnapshot = transformCameraInfo(cameraRaw);
+
   const status: NinaAdvancedStatus = {
     available: true,
     version: version ?? undefined,
-    sequence: {
-      items: sequenceItems,
-      isRunning: Boolean(running),
-      runningItemName: running?.node.name ?? null,
-      runningPath: running?.path,
-      breadcrumb: running?.path ?? null,
-    },
-    camera: transformCameraInfo(cameraRaw),
+    sequence: sequenceSnapshot,
+    camera: cameraSnapshot,
   };
-
-  if (!sequenceRaw) {
-    status.sequence = null;
-  }
-
-  if (!cameraRaw) {
-    status.camera = null;
-  }
 
   return status;
 }

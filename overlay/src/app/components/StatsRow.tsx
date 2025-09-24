@@ -13,7 +13,6 @@ export interface StatDefinition {
   value?: ReactNode;
   cardClassName?: string;
   progressPercent?: number;
-  progressCaption?: ReactNode;
   breadcrumb?: ReadonlyArray<string>;
 }
 

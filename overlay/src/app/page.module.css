@@ -135,11 +135,6 @@
   min-width: 320px;
 }
 
-.statCardWeather {
-  flex: 2 1 360px;
-  min-width: 280px;
-}
-
 .statCardSkyQuality {
   flex: 0 1 180px;
   min-width: 140px;

@@ -534,7 +534,7 @@ export function formatMountDisplay(
   return pointing;
 }
 
-export function formatWeatherDisplay(
+export function formatSkyQuality(
   weather: NinaWeatherInfo | null,
   options: { connectionOffline: boolean; hasConnected: boolean },
 ): string {
