@@ -41,13 +41,44 @@
     "$values": [
       {
         "$id": "7",
+        "$type": "NINA.Sequencer.SequenceItem.Utility.WaitForTime, NINA.Sequencer",
+        "Hours": 19,
+        "Minutes": 57,
+        "MinutesOffset": 0,
+        "Seconds": 44,
+        "SelectedProvider": {
+          "$id": "8",
+          "$type": "NINA.Sequencer.Utility.DateTimeProvider.NauticalDuskProvider, NINA.Sequencer"
+        },
+        "Parent": {
+          "$ref": "1"
+        },
+        "ErrorBehavior": 0,
+        "Attempts": 1
+      },
+      {
+        "$id": "9",
+        "$type": "DaleGhent.NINA.AstroPhysicsTools.CreateDecArcModel.CreateDecArcModel, DaleGhent.NINA.AstroPhysicsTools",
+        "HourAngleLeadIn": 0.0,
+        "HourAngleTail": 0.0,
+        "DoFullArc": false,
+        "ManualMode": false,
+        "DoNotExit": false,
+        "Parent": {
+          "$ref": "1"
+        },
+        "ErrorBehavior": 0,
+        "Attempts": 1
+      },
+      {
+        "$id": "10",
         "$type": "NINA.Sequencer.SequenceItem.Utility.WaitUntilAboveHorizon, NINA.Sequencer",
         "HasDsoParent": true,
         "Data": {
-          "$id": "8",
+          "$id": "11",
           "$type": "NINA.Sequencer.SequenceItem.Utility.WaitLoopData, NINA.Sequencer",
           "Coordinates": {
-            "$id": "9",
+            "$id": "12",
             "$type": "NINA.Astrometry.InputCoordinates, NINA.Astrometry",
             "RAHours": 0,
             "RAMinutes": 0,
@@ -60,37 +91,6 @@
           "Offset": 35.0,
           "Comparator": 3
         },
-        "Parent": {
-          "$ref": "1"
-        },
-        "ErrorBehavior": 0,
-        "Attempts": 1
-      },
-      {
-        "$id": "10",
-        "$type": "NINA.Sequencer.SequenceItem.Utility.WaitForTime, NINA.Sequencer",
-        "Hours": 19,
-        "Minutes": 57,
-        "MinutesOffset": 0,
-        "Seconds": 44,
-        "SelectedProvider": {
-          "$id": "11",
-          "$type": "NINA.Sequencer.Utility.DateTimeProvider.NauticalDuskProvider, NINA.Sequencer"
-        },
-        "Parent": {
-          "$ref": "1"
-        },
-        "ErrorBehavior": 0,
-        "Attempts": 1
-      },
-      {
-        "$id": "12",
-        "$type": "DaleGhent.NINA.AstroPhysicsTools.CreateDecArcModel.CreateDecArcModel, DaleGhent.NINA.AstroPhysicsTools",
-        "HourAngleLeadIn": 0.0,
-        "HourAngleTail": 0.0,
-        "DoFullArc": false,
-        "ManualMode": false,
-        "DoNotExit": false,
         "Parent": {
           "$ref": "1"
         },
