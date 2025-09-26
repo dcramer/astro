@@ -145,6 +145,11 @@
   min-width: 160px;
 }
 
+.statCardHumidity {
+  flex: 0 1 180px;
+  min-width: 140px;
+}
+
 .statLabel {
   font-size: 0.6rem;
   letter-spacing: 0.22em;

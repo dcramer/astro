@@ -15,6 +15,7 @@ import {
   formatCameraStatus,
   formatMountDisplay,
   formatAmbientTemperature,
+  formatHumidity,
   formatSkyQuality,
   formatSequenceProgressSuffix,
   formatSequenceStatus,
@@ -152,7 +153,24 @@ export default function OverlayDisplay({
     cardClassName: styles.statCardAmbient,
   };
 
-  const rowTwoStats: StatDefinition[] = [cameraStat, mountStat, skyStat, temperatureStat];
+  const humidityStat: StatDefinition = {
+    key: "humidity",
+    label: "Humidity",
+    value: (
+      <StatValue className={styles.statValueWrap}>
+        {formatHumidity(weatherInfo, { connectionOffline, hasConnected })}
+      </StatValue>
+    ),
+    cardClassName: styles.statCardHumidity,
+  };
+
+  const rowTwoStats: StatDefinition[] = [
+    cameraStat,
+    mountStat,
+    skyStat,
+    temperatureStat,
+    humidityStat,
+  ];
 
   let sequencerChain: string[] | null = null;
   let sequencerCurrent = sequencerData ? formatSequenceStatus(sequencerData) : "—";
