@@ -79,19 +79,19 @@
               "Filter": {
                 "$id": "12",
                 "$type": "NINA.Core.Model.Equipment.FilterInfo, NINA.Core",
-                "_name": "S-II",
+                "_name": "Sii",
                 "_focusOffset": 0,
-                "_position": 3,
+                "_position": 1,
                 "_autoFocusExposureTime": -1.0,
                 "_autoFocusFilter": false,
                 "FlatWizardFilterSettings": {
                   "$id": "13",
                   "$type": "NINA.Core.Model.Equipment.FlatWizardFilterSettings, NINA.Core",
                   "FlatWizardMode": 0,
-                  "HistogramMeanTarget": 0.25,
-                  "HistogramTolerance": 0.05,
-                  "MaxFlatExposureTime": 40.0,
-                  "MinFlatExposureTime": 0.25,
+                  "HistogramMeanTarget": 0.5,
+                  "HistogramTolerance": 0.1,
+                  "MaxFlatExposureTime": 4.0,
+                  "MinFlatExposureTime": 0.5,
                   "MaxAbsoluteFlatDeviceBrightness": 0,
                   "MinAbsoluteFlatDeviceBrightness": 0,
                   "Gain": -1,
@@ -444,9 +444,9 @@
               "Filter": {
                 "$id": "53",
                 "$type": "NINA.Core.Model.Equipment.FilterInfo, NINA.Core",
-                "_name": "O-III",
+                "_name": "Oiii",
                 "_focusOffset": 0,
-                "_position": 4,
+                "_position": 3,
                 "_autoFocusExposureTime": -1.0,
                 "_autoFocusFilter": false,
                 "FlatWizardFilterSettings": {
@@ -454,9 +454,9 @@
                   "$type": "NINA.Core.Model.Equipment.FlatWizardFilterSettings, NINA.Core",
                   "FlatWizardMode": 0,
                   "HistogramMeanTarget": 0.25,
-                  "HistogramTolerance": 0.1,
+                  "HistogramTolerance": 0.05,
                   "MaxFlatExposureTime": 40.0,
-                  "MinFlatExposureTime": 2.0,
+                  "MinFlatExposureTime": 0.25,
                   "MaxAbsoluteFlatDeviceBrightness": 0,
                   "MinAbsoluteFlatDeviceBrightness": 0,
                   "Gain": -1,
@@ -471,8 +471,8 @@
                 "_autoFocusBinning": {
                   "$id": "56",
                   "$type": "NINA.Core.Model.Equipment.BinningMode, NINA.Core",
-                  "X": 1,
-                  "Y": 1
+                  "X": 2,
+                  "Y": 2
                 },
                 "_autoFocusGain": -1,
                 "_autoFocusOffset": -1

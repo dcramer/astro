@@ -4,7 +4,7 @@
   "Strategy": {
     "$type": "NINA.Sequencer.Container.ExecutionStrategy.SequentialStrategy, NINA.Sequencer"
   },
-  "Name": "Image Target (SHO)",
+  "Name": "Image Target (RGB)",
   "Conditions": {
     "$id": "2",
     "$type": "System.Collections.ObjectModel.ObservableCollection`1[[NINA.Sequencer.Conditions.ISequenceCondition, NINA.Sequencer]], System.ObjectModel",
@@ -100,19 +100,19 @@
               "Filter": {
                 "$id": "15",
                 "$type": "NINA.Core.Model.Equipment.FilterInfo, NINA.Core",
-                "_name": "Sii",
+                "_name": "R",
                 "_focusOffset": 0,
-                "_position": 1,
+                "_position": 4,
                 "_autoFocusExposureTime": -1.0,
                 "_autoFocusFilter": false,
                 "FlatWizardFilterSettings": {
                   "$id": "16",
                   "$type": "NINA.Core.Model.Equipment.FlatWizardFilterSettings, NINA.Core",
                   "FlatWizardMode": 0,
-                  "HistogramMeanTarget": 0.5,
+                  "HistogramMeanTarget": 0.25,
                   "HistogramTolerance": 0.1,
-                  "MaxFlatExposureTime": 4.0,
-                  "MinFlatExposureTime": 0.5,
+                  "MaxFlatExposureTime": 40.0,
+                  "MinFlatExposureTime": 2.0,
                   "MaxAbsoluteFlatDeviceBrightness": 0,
                   "MinAbsoluteFlatDeviceBrightness": 0,
                   "Gain": -1,
@@ -127,8 +127,8 @@
                 "_autoFocusBinning": {
                   "$id": "18",
                   "$type": "NINA.Core.Model.Equipment.BinningMode, NINA.Core",
-                  "X": 2,
-                  "Y": 2
+                  "X": 1,
+                  "Y": 1
                 },
                 "_autoFocusGain": -1,
                 "_autoFocusOffset": -1
@@ -233,7 +233,7 @@
               "$id": "30",
               "$type": "NINA.Sequencer.Conditions.LoopCondition, NINA.Sequencer",
               "CompletedIterations": 0,
-              "Iterations": 1,
+              "Iterations": 2,
               "Parent": {
                 "$ref": "28"
               }
@@ -251,35 +251,35 @@
               "Filter": {
                 "$id": "33",
                 "$type": "NINA.Core.Model.Equipment.FilterInfo, NINA.Core",
-                "_name": "Ha",
+                "_name": "G",
                 "_focusOffset": 0,
-                "_position": 2,
+                "_position": 5,
                 "_autoFocusExposureTime": -1.0,
                 "_autoFocusFilter": false,
                 "FlatWizardFilterSettings": {
                   "$id": "34",
                   "$type": "NINA.Core.Model.Equipment.FlatWizardFilterSettings, NINA.Core",
                   "FlatWizardMode": 0,
-                  "HistogramMeanTarget": 0.3,
+                  "HistogramMeanTarget": 0.5,
                   "HistogramTolerance": 0.1,
-                  "MaxFlatExposureTime": 5.0,
-                  "MinFlatExposureTime": 0.25,
-                  "MaxAbsoluteFlatDeviceBrightness": 4096,
+                  "MaxFlatExposureTime": 30.0,
+                  "MinFlatExposureTime": 0.01,
+                  "MaxAbsoluteFlatDeviceBrightness": 0,
                   "MinAbsoluteFlatDeviceBrightness": 0,
                   "Gain": -1,
                   "Offset": -1,
                   "Binning": {
                     "$id": "35",
                     "$type": "NINA.Core.Model.Equipment.BinningMode, NINA.Core",
-                    "X": 2,
-                    "Y": 2
+                    "X": 1,
+                    "Y": 1
                   }
                 },
                 "_autoFocusBinning": {
                   "$id": "36",
                   "$type": "NINA.Core.Model.Equipment.BinningMode, NINA.Core",
-                  "X": 2,
-                  "Y": 2
+                  "X": 1,
+                  "Y": 1
                 },
                 "_autoFocusGain": -1,
                 "_autoFocusOffset": -1
@@ -399,19 +399,19 @@
               "Filter": {
                 "$id": "50",
                 "$type": "NINA.Core.Model.Equipment.FilterInfo, NINA.Core",
-                "_name": "Oiii",
+                "_name": "B",
                 "_focusOffset": 0,
-                "_position": 3,
+                "_position": 6,
                 "_autoFocusExposureTime": -1.0,
                 "_autoFocusFilter": false,
                 "FlatWizardFilterSettings": {
                   "$id": "51",
                   "$type": "NINA.Core.Model.Equipment.FlatWizardFilterSettings, NINA.Core",
                   "FlatWizardMode": 0,
-                  "HistogramMeanTarget": 0.25,
-                  "HistogramTolerance": 0.05,
-                  "MaxFlatExposureTime": 40.0,
-                  "MinFlatExposureTime": 0.25,
+                  "HistogramMeanTarget": 0.5,
+                  "HistogramTolerance": 0.1,
+                  "MaxFlatExposureTime": 30.0,
+                  "MinFlatExposureTime": 0.01,
                   "MaxAbsoluteFlatDeviceBrightness": 0,
                   "MinAbsoluteFlatDeviceBrightness": 0,
                   "Gain": -1,
@@ -426,8 +426,8 @@
                 "_autoFocusBinning": {
                   "$id": "53",
                   "$type": "NINA.Core.Model.Equipment.BinningMode, NINA.Core",
-                  "X": 2,
-                  "Y": 2
+                  "X": 1,
+                  "Y": 1
                 },
                 "_autoFocusGain": -1,
                 "_autoFocusOffset": -1
