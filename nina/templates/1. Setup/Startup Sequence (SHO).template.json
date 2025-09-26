@@ -4,7 +4,7 @@
   "Strategy": {
     "$type": "NINA.Sequencer.Container.ExecutionStrategy.SequentialStrategy, NINA.Sequencer"
   },
-  "Name": "Startup Sequence SHO",
+  "Name": "Startup Sequence (SHO)",
   "Conditions": {
     "$id": "2",
     "$type": "System.Collections.ObjectModel.ObservableCollection`1[[NINA.Sequencer.Conditions.ISequenceCondition, NINA.Sequencer]], System.ObjectModel",
@@ -56,7 +56,7 @@
       {
         "$id": "9",
         "$type": "WhenPlugin.When.TemplateByReference, WhenPlugin",
-        "TemplateName": "Prepare and Stack Flats (SHO)",
+        "TemplateName": "Auto Focus",
         "Condition": null,
         "Instructions": {
           "$id": "10",
@@ -93,44 +93,6 @@
       },
       {
         "$id": "14",
-        "$type": "WhenPlugin.When.TemplateByReference, WhenPlugin",
-        "TemplateName": "Auto Focus",
-        "Condition": null,
-        "Instructions": {
-          "$id": "15",
-          "$type": "WhenPlugin.When.TemplateContainer, WhenPlugin",
-          "Strategy": {
-            "$type": "NINA.Sequencer.Container.ExecutionStrategy.SequentialStrategy, NINA.Sequencer"
-          },
-          "Name": null,
-          "Conditions": {
-            "$id": "16",
-            "$type": "System.Collections.ObjectModel.ObservableCollection`1[[NINA.Sequencer.Conditions.ISequenceCondition, NINA.Sequencer]], System.ObjectModel",
-            "$values": []
-          },
-          "IsExpanded": true,
-          "Items": {
-            "$id": "17",
-            "$type": "System.Collections.ObjectModel.ObservableCollection`1[[NINA.Sequencer.SequenceItem.ISequenceItem, NINA.Sequencer]], System.ObjectModel",
-            "$values": []
-          },
-          "Triggers": {
-            "$id": "18",
-            "$type": "System.Collections.ObjectModel.ObservableCollection`1[[NINA.Sequencer.Trigger.ISequenceTrigger, NINA.Sequencer]], System.ObjectModel",
-            "$values": []
-          },
-          "Parent": null,
-          "ErrorBehavior": 0,
-          "Attempts": 1
-        },
-        "Parent": {
-          "$ref": "1"
-        },
-        "ErrorBehavior": 0,
-        "Attempts": 1
-      },
-      {
-        "$id": "19",
         "$type": "NINA.Sequencer.SequenceItem.FlatDevice.ToggleLight, NINA.Sequencer",
         "OnOff": false,
         "Parent": {
@@ -142,7 +104,7 @@
     ]
   },
   "Triggers": {
-    "$id": "20",
+    "$id": "15",
     "$type": "System.Collections.ObjectModel.ObservableCollection`1[[NINA.Sequencer.Trigger.ISequenceTrigger, NINA.Sequencer]], System.ObjectModel",
     "$values": []
   },
