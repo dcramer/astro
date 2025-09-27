@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import type { NinaMountInfo, AdvancedSequenceSnapshot } from "@nina/advanced";
-import { findCurrentImagingTarget } from "./overlay-utils";
+import { findCurrentImagingTarget } from "./utils";
 import { extractTargetWithCoordinates } from "./target-extractor";
 import type { TelescopiusTarget } from "../telescopius/client";
 
@@ -117,12 +117,18 @@ export function useTargetEnrichment(
       }
 
       // Step 3: Update tracking refs
-      prevTargetName.current = detectedTarget.name;
+      prevTargetName.current = detectedTarget.name || null;
       if (detectedTarget.ra && detectedTarget.dec) {
         prevCoordinates.current = { ra: detectedTarget.ra, dec: detectedTarget.dec };
       }
 
-      // Step 4: Create base target object
+      // Step 4: Ensure we have required fields
+      if (!detectedTarget.name) {
+        setCurrentTarget(null);
+        return;
+      }
+
+      // Step 5: Create base target object
       const newTarget: CurrentTarget = {
         name: detectedTarget.name,
         ra: detectedTarget.ra || 0,
@@ -131,7 +137,7 @@ export function useTargetEnrichment(
         lastUpdated: new Date(),
       };
 
-      // Step 5: Try to enrich with Telescopius data
+      // Step 6: Try to enrich with Telescopius data
       if (detectedTarget.ra && detectedTarget.dec) {
         // Check cache first
         const cacheKey = `${detectedTarget.ra.toFixed(2)},${detectedTarget.dec.toFixed(2)}`;
@@ -139,7 +145,7 @@ export function useTargetEnrichment(
 
         if (cached && cached.length > 0) {
           // Use cached enrichment
-          const enrichment = findBestMatch(detectedTarget.name, cached);
+          const enrichment = findBestMatch(newTarget.name, cached);
           if (enrichment) {
             newTarget.fullName = enrichment.name;
             newTarget.type = enrichment.type;
@@ -171,7 +177,7 @@ export function useTargetEnrichment(
               setLastApiCall(new Date());
 
               // Find best match for enrichment
-              const enrichment = findBestMatch(detectedTarget.name, targets);
+              const enrichment = findBestMatch(newTarget.name, targets);
               if (enrichment) {
                 // Found enrichment match
                 newTarget.fullName = enrichment.name;
@@ -203,7 +209,7 @@ export function useTargetEnrichment(
     // Poll every 5 seconds to check for changes
     const interval = setInterval(detectAndEnrichTarget, 5000);
     return () => clearInterval(interval);
-  }, [sequence, mount, enabled, currentTarget]);
+  }, [sequence, mount, enabled]);
 
   // Clean old cache entries periodically
   useEffect(() => {

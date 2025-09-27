@@ -40,8 +40,10 @@ export interface RawCameraInfo {
   IsExposing?: boolean;
   CameraState?: number | null;
   ExposureEndTime?: string | null;
+  ExposureStartTime?: string | null;
   ExposureDuration?: number | null;
   ExposureTime?: number | null;
+  ExposureElapsed?: number | null;
   LastExposureDuration?: number | null;
   LastDownloadTime?: number | null;
 }
@@ -190,6 +192,7 @@ export interface NinaCameraSnapshot {
   readonly isExposing: boolean;
   readonly cameraState?: number | null;
   readonly exposureEndTime?: string | null;
+  readonly exposureStartTime?: string | null;
   readonly exposureDurationSeconds?: number | null;
   readonly elapsedExposureSeconds?: number | null;
   readonly lastExposureDurationSeconds?: number | null;
@@ -279,5 +282,5 @@ export interface NinaImageHistoryEntry {
   readonly hfr: number | null;
   readonly isBayered: boolean;
   readonly cameraTemperature?: number | null;
-  readonly targetName?: string | null;
+  readonly originalIndex?: number;
 }

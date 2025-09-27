@@ -1,0 +1,176 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.LocalCatalog = void 0;
+const coordinates_1 = require("./utils/coordinates");
+const messier_1 = require("./data/messier");
+const sharpless_1 = require("./data/sharpless");
+const ngc_ic_bright_1 = require("./data/ngc-ic-bright");
+class LocalCatalog {
+    constructor(options = {}) {
+        this.options = options;
+        this.catalog = [];
+        this.loaded = false;
+        this.indexByRA = new Map();
+    }
+    async initialize() {
+        if (this.loaded)
+            return;
+        const { includeCatalogs, maxMagnitude } = this.options;
+        // Load catalogs
+        const catalogs = [];
+        if (!includeCatalogs || includeCatalogs.includes('M')) {
+            catalogs.push(...messier_1.messierCatalog);
+        }
+        if (!includeCatalogs || includeCatalogs.includes('SH2')) {
+            catalogs.push(...sharpless_1.sharplessCatalog);
+        }
+        if (!includeCatalogs || includeCatalogs.includes('NGC') || includeCatalogs.includes('IC')) {
+            const filtered = ngc_ic_bright_1.ngcIcBrightCatalog.filter(obj => {
+                if (includeCatalogs) {
+                    return includeCatalogs.includes(obj.catalog);
+                }
+                return true;
+            });
+            catalogs.push(...filtered);
+        }
+        // Filter by magnitude if specified
+        if (maxMagnitude !== undefined) {
+            this.catalog = catalogs.filter(obj => obj.mag === undefined || obj.mag <= maxMagnitude);
+        }
+        else {
+            this.catalog = catalogs;
+        }
+        // Build spatial index (simple RA-based for now)
+        this.buildSpatialIndex();
+        this.loaded = true;
+    }
+    buildSpatialIndex() {
+        // Group objects into 10-degree RA bins for faster searching
+        this.catalog.forEach(obj => {
+            const raBin = Math.floor(obj.ra / 10) * 10;
+            if (!this.indexByRA.has(raBin)) {
+                this.indexByRA.set(raBin, []);
+            }
+            this.indexByRA.get(raBin).push(obj);
+        });
+    }
+    /**
+     * Search for objects within a radius of given coordinates
+     */
+    async search(ra, dec, radiusArcmin, options = {}) {
+        if (!this.loaded) {
+            await this.initialize();
+        }
+        // Normalize coordinates
+        ra = (0, coordinates_1.normalizeRA)(ra);
+        dec = Math.max(-90, Math.min(90, dec));
+        const results = [];
+        // Calculate which RA bins to search
+        // Account for cos(dec) factor in RA spread
+        const cosDec = Math.cos(dec * Math.PI / 180);
+        const raSpread = cosDec > 0.01 ? Math.min(radiusArcmin / 60 / cosDec, 180) : 180;
+        // Collect all bins to search (handles wraparound automatically)
+        const binsToSearch = new Set();
+        const minRA = ra - raSpread;
+        const maxRA = ra + raSpread;
+        // Add bins in the search range
+        for (let binRA = Math.floor(minRA / 10) * 10; binRA <= Math.ceil(maxRA / 10) * 10; binRA += 10) {
+            const normalizedBin = ((binRA % 360) + 360) % 360;
+            binsToSearch.add(Math.floor(normalizedBin / 10) * 10);
+        }
+        // Search all collected bins
+        for (const binKey of binsToSearch) {
+            const binObjects = this.indexByRA.get(binKey) || [];
+            for (const obj of binObjects) {
+                // Quick rectangular filter before expensive distance calc
+                const raDiff = Math.abs(obj.ra - ra);
+                const wrappedRaDiff = Math.min(raDiff, 360 - raDiff);
+                if (wrappedRaDiff * cosDec > raSpread) {
+                    continue;
+                }
+                // Check if object is within radius
+                if (!(0, coordinates_1.isInRadius)(obj.ra, obj.dec, ra, dec, radiusArcmin)) {
+                    continue;
+                }
+                // Apply filters
+                if (!this.passesFilters(obj, options)) {
+                    continue;
+                }
+                const distance = (0, coordinates_1.calculateAngularDistance)(ra, dec, obj.ra, obj.dec);
+                results.push({ object: obj, distance });
+            }
+        }
+        // Sort by distance
+        results.sort((a, b) => a.distance - b.distance);
+        return results;
+    }
+    passesFilters(obj, options) {
+        if (options.maxMagnitude !== undefined && obj.mag !== undefined && obj.mag > options.maxMagnitude) {
+            return false;
+        }
+        if (options.minSize !== undefined) {
+            const size = Array.isArray(obj.size) ? Math.max(...obj.size) : obj.size;
+            if (size !== undefined && size < options.minSize) {
+                return false;
+            }
+        }
+        if (options.types && options.types.length > 0 && !options.types.includes(obj.type)) {
+            return false;
+        }
+        if (options.catalogs && options.catalogs.length > 0 && !options.catalogs.includes(obj.catalog)) {
+            return false;
+        }
+        if (options.constellation && obj.constellation !== options.constellation) {
+            return false;
+        }
+        return true;
+    }
+    /**
+     * Get a specific object by its ID
+     */
+    async getObject(id) {
+        if (!this.loaded) {
+            await this.initialize();
+        }
+        return this.catalog.find(obj => obj.id === id || obj.names.includes(id));
+    }
+    /**
+     * Get all loaded objects
+     */
+    async getAllObjects() {
+        if (!this.loaded) {
+            await this.initialize();
+        }
+        return [...this.catalog];
+    }
+    /**
+     * Get catalog statistics
+     */
+    async getStats() {
+        if (!this.loaded) {
+            await this.initialize();
+        }
+        const stats = {
+            totalObjects: this.catalog.length,
+            objectsByType: {},
+            magnitudeRange: [Infinity, -Infinity],
+            catalogs: new Set()
+        };
+        for (const obj of this.catalog) {
+            // Count by type
+            stats.objectsByType[obj.type] = (stats.objectsByType[obj.type] || 0) + 1;
+            // Track magnitude range
+            if (obj.mag !== undefined) {
+                stats.magnitudeRange[0] = Math.min(stats.magnitudeRange[0], obj.mag);
+                stats.magnitudeRange[1] = Math.max(stats.magnitudeRange[1], obj.mag);
+            }
+            // Track catalogs
+            stats.catalogs.add(obj.catalog);
+        }
+        return {
+            ...stats,
+            catalogs: Array.from(stats.catalogs)
+        };
+    }
+}
+exports.LocalCatalog = LocalCatalog;

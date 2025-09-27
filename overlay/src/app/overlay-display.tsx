@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
+import { TimeProvider, useTime } from "./contexts/TimeContext";
 
 import { formatDuration, formatNumber, formatTime } from "@nina/format";
 import { getImageThumbnailUrl } from "@nina/advanced";
@@ -26,7 +27,7 @@ import {
   getFilterColor,
   normalizeSequenceBreadcrumbEntry,
   summarizeImageHistory,
-} from "./overlay-utils";
+} from "./utils";
 
 import styles from "./page.module.css";
 
@@ -37,10 +38,11 @@ interface OverlayDisplayProps {
   pollMs?: number;
 }
 
-export default function OverlayDisplay({
+function OverlayDisplayInner({
   baseUrl,
   pollMs = DEFAULT_POLL_MS,
 }: OverlayDisplayProps) {
+  const now = useTime();
   const {
     imageHistory,
     advancedStatus,
@@ -50,11 +52,10 @@ export default function OverlayDisplay({
     weatherInfo,
   } =
     useOverlaySession({ baseUrl, pollMs });
-  const [now, setNow] = useState(() => Date.now());
 
   // Get enriched target information
   const { currentTarget, isLoadingEnrichment } = useTargetEnrichment(
-    advancedStatus?.sequence,
+    advancedStatus?.sequence ?? null,
     mountInfo,
     !connectionOffline
   );
@@ -62,16 +63,6 @@ export default function OverlayDisplay({
     key: string | null;
     initialRemaining: number | null;
   }>({ key: null, initialRemaining: null });
-
-  useEffect(() => {
-    const intervalId = window.setInterval(() => {
-      setNow(Date.now());
-    }, 1000);
-
-    return () => {
-      window.clearInterval(intervalId);
-    };
-  }, []);
 
   const imageSummary = summarizeImageHistory(imageHistory);
   const hasImages = imageSummary.totalImages > 0;
@@ -83,7 +74,9 @@ export default function OverlayDisplay({
 
   const previewClass = styles.thumbnail;
   const latestThumbnailUrl =
-    hasImages && advancedBaseUrl ? getImageThumbnailUrl(advancedBaseUrl, 0) : null;
+    hasImages && advancedBaseUrl && latestImage?.originalIndex !== undefined
+      ? getImageThumbnailUrl(advancedBaseUrl, latestImage.originalIndex)
+      : null;
 
   const cameraData =
     !connectionOffline && advancedStatus?.available && advancedStatus.camera
@@ -123,9 +116,7 @@ export default function OverlayDisplay({
   const cameraStat: StatDefinition = {
     key: "camera",
     label: "Camera",
-    value: cameraProgress
-      ? undefined
-      : <StatValue>{cameraData ? formatCameraStatus(cameraData, now, null) : "—"}</StatValue>,
+    value: <StatValue>{cameraData ? formatCameraStatus(cameraData, now, cameraProgress) : "—"}</StatValue>,
     progressPercent: cameraProgress?.percent,
     cardClassName: styles.statCardCamera,
   };
@@ -215,12 +206,12 @@ export default function OverlayDisplay({
     }
   }
 
-  // Legacy target name for fallback (keeping for compatibility)
+  // Get target name from sequence data
   const imagingTarget = findCurrentImagingTarget(sequencerData);
   const targetName = connectionOffline
     ? "<Offline>"
     : hasConnected
-      ? currentTarget?.name || imagingTarget || latestImage?.targetName?.trim() || "<No Target>"
+      ? currentTarget?.name || imagingTarget || "<No Target>"
       : "<Loading>";
 
   let sequencerBreadcrumb: string[] | null = sequencerChain;
@@ -346,5 +337,13 @@ export default function OverlayDisplay({
         </div>
       </div>
     </div>
+  );
+}
+
+export default function OverlayDisplay(props: OverlayDisplayProps) {
+  return (
+    <TimeProvider intervalMs={1000}>
+      <OverlayDisplayInner {...props} />
+    </TimeProvider>
   );
 }

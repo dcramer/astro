@@ -124,13 +124,13 @@ export function extractTargetWithCoordinates(
       // Check if this is a Targets_Container
       if (item.name === "Targets_Container" || item.name === "Targets Container") {
         // The first child is the current/next target
-        if (item.items?.length > 0) {
+        if (item.items && item.items.length > 0) {
           // Check if we're currently inside one of these target containers
-          let targetContainer = item.items[0]; // Default to first
+          let targetContainer = item.items![0]; // Default to first (we know items exists from check above)
 
           // If breadcrumb shows we're inside a specific target, use that one
           if (breadcrumb.length > 0) {
-            for (const child of item.items) {
+            for (const child of item.items!) {
               if (breadcrumb.includes(child.name)) {
                 targetContainer = child;
                 // Currently active in target container

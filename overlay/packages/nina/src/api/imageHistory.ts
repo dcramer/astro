@@ -44,7 +44,7 @@ export async function loadImageHistory(): Promise<ReadonlyArray<NinaImageHistory
 
   const payload = await fetchAdvancedResponse<RawImageHistoryEntry[] | RawImageHistoryResponse | null>(
     baseUrl,
-    "/v2/api/image-history",
+    "/v2/api/image-history?all=true",
   );
 
   if (!payload) {
@@ -62,7 +62,14 @@ export async function loadImageHistory(): Promise<ReadonlyArray<NinaImageHistory
     }
   }
 
-  return entries.map(transformImageHistoryEntry).sort((a, b) => {
+  // Transform and add original index
+  const transformed = entries.map((entry, index) => ({
+    ...transformImageHistoryEntry(entry),
+    originalIndex: index
+  }));
+
+  // Sort by date (newest first)
+  return transformed.sort((a, b) => {
     const timeA = a.startTime ? new Date(a.startTime).getTime() : 0;
     const timeB = b.startTime ? new Date(b.startTime).getTime() : 0;
     return timeB - timeA;

@@ -101,6 +101,7 @@ function transformCameraInfo(raw: RawCameraInfo | null | undefined): NinaCameraS
         ? Number(raw.CameraState)
         : null,
     exposureEndTime: raw.ExposureEndTime ?? null,
+    exposureStartTime: raw.ExposureStartTime ?? null,
     exposureDurationSeconds,
     elapsedExposureSeconds,
     lastExposureDurationSeconds: fallbackDuration,
