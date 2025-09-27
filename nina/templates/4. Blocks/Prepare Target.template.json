@@ -7,29 +7,38 @@
   "Name": "Prepare Target",
   "Conditions": {
     "$id": "2",
-    "$type": "System.Collections.ObjectModel.ObservableCollection`1[[NINA.Sequencer.Conditions.ISequenceCondition, NINA.Sequencer]], System",
+    "$type": "System.Collections.ObjectModel.ObservableCollection`1[[NINA.Sequencer.Conditions.ISequenceCondition, NINA.Sequencer]], System.ObjectModel",
     "$values": []
   },
   "IsExpanded": true,
   "Items": {
     "$id": "3",
-    "$type": "System.Collections.ObjectModel.ObservableCollection`1[[NINA.Sequencer.SequenceItem.ISequenceItem, NINA.Sequencer]], System",
+    "$type": "System.Collections.ObjectModel.ObservableCollection`1[[NINA.Sequencer.SequenceItem.ISequenceItem, NINA.Sequencer]], System.ObjectModel",
     "$values": [
       {
         "$id": "4",
+        "$type": "NINA.Sequencer.SequenceItem.FlatDevice.OpenCover, NINA.Sequencer",
+        "Parent": {
+          "$ref": "1"
+        },
+        "ErrorBehavior": 0,
+        "Attempts": 1
+      },
+      {
+        "$id": "5",
         "$type": "NINA.Sequencer.SequenceItem.Platesolving.CenterAndRotate, NINA.Sequencer",
-        "Rotation": 0.0,
+        "PositionAngle": 110.0,
         "Inherited": false,
         "Coordinates": {
-          "$id": "5",
+          "$id": "6",
           "$type": "NINA.Astrometry.InputCoordinates, NINA.Astrometry",
-          "RAHours": 0,
-          "RAMinutes": 0,
-          "RASeconds": 0,
+          "RAHours": 1,
+          "RAMinutes": 33,
+          "RASeconds": 50.904,
           "NegativeDec": false,
-          "DecDegrees": 0,
-          "DecMinutes": 0,
-          "DecSeconds": 0
+          "DecDegrees": 30,
+          "DecMinutes": 39,
+          "DecSeconds": 35.79001
         },
         "Parent": {
           "$ref": "1"
@@ -38,7 +47,7 @@
         "Attempts": 1
       },
       {
-        "$id": "6",
+        "$id": "7",
         "$type": "NINA.Sequencer.SequenceItem.Guider.StartGuiding, NINA.Sequencer",
         "ForceCalibration": false,
         "Parent": {
@@ -48,7 +57,7 @@
         "Attempts": 1
       },
       {
-        "$id": "7",
+        "$id": "8",
         "$type": "NINA.Sequencer.SequenceItem.Autofocus.RunAutofocus, NINA.Sequencer",
         "Parent": {
           "$ref": "1"
@@ -59,8 +68,8 @@
     ]
   },
   "Triggers": {
-    "$id": "8",
-    "$type": "System.Collections.ObjectModel.ObservableCollection`1[[NINA.Sequencer.Trigger.ISequenceTrigger, NINA.Sequencer]], System",
+    "$id": "9",
+    "$type": "System.Collections.ObjectModel.ObservableCollection`1[[NINA.Sequencer.Trigger.ISequenceTrigger, NINA.Sequencer]], System.ObjectModel",
     "$values": []
   },
   "Parent": null,
