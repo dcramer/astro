@@ -431,8 +431,8 @@ const sequenceDetailExtractors: Record<string, SequenceDetailExtractor> = {
     const parts: string[] = [];
 
     // Check for TargetTime directly on the item (from the JSON structure)
-    const targetTimeValue = (item as any).TargetTime ||
-                           (item as any).targetTime ||
+    const targetTimeValue = (item as Record<string, unknown>).TargetTime ||
+                           (item as Record<string, unknown>).targetTime ||
                            item.metadata?.["TargetTime"] ||
                            item.metadata?.["WaitUntil"] ||
                            item.metadata?.["Time"];
@@ -459,8 +459,8 @@ const sequenceDetailExtractors: Record<string, SequenceDetailExtractor> = {
     }
 
     // Check for CalculatedWaitDuration directly on the item
-    const calculatedDuration = (item as any).CalculatedWaitDuration ||
-                               (item as any).calculatedWaitDuration;
+    const calculatedDuration = (item as Record<string, unknown>).CalculatedWaitDuration ||
+                               (item as Record<string, unknown>).calculatedWaitDuration;
     if (!targetTimeValue && calculatedDuration) {
       // Parse duration string like "02:40:25.9083582"
       const durationMatch = String(calculatedDuration).match(/(\d+):(\d+):(\d+)/);
@@ -504,6 +504,110 @@ const sequenceDetailExtractors: Record<string, SequenceDetailExtractor> = {
         parts.push("rising");
       } else if (comp.includes("setting") || comp.includes("below")) {
         parts.push("setting");
+      }
+    }
+
+    return parts;
+  },
+
+  "Wait until Above horizon": (item, now) => {
+    const parts: string[] = [];
+    const metadata = item.metadata || {};
+
+    // Get the current altitude
+    const currentAlt = coerceNumber(metadata["currentAltitude"] || metadata["CurrentAltitude"]);
+
+    // Get the target altitude (horizon threshold)
+    const targetAlt = coerceNumber(metadata["Altitude"] || metadata["TargetAltitude"] || metadata["HorizonAltitude"]);
+
+    // Check for ExpectedTime directly on the item (from the JSON structure)
+    const expectedTimeValue = (item as Record<string, unknown>).ExpectedTime ||
+                             (item as Record<string, unknown>).expectedTime ||
+                             metadata["ExpectedTime"] ||
+                             metadata["WaitUntil"] ||
+                             metadata["Time"];
+
+    if (expectedTimeValue) {
+      let targetTime: Date | null = null;
+      const timeStr = String(expectedTimeValue);
+
+      // Try parsing as a full date first
+      targetTime = new Date(timeStr);
+
+      // If that fails or gives an invalid date, try parsing as time-only string (e.g., "21:05")
+      if (isNaN(targetTime.getTime()) && timeStr.includes(':')) {
+        const today = new Date(now || Date.now());
+        const [hours, minutes] = timeStr.split(':').map(n => parseInt(n, 10));
+        if (!isNaN(hours) && !isNaN(minutes)) {
+          targetTime = new Date(today.getFullYear(), today.getMonth(), today.getDate(), hours, minutes, 0);
+
+          // If the time has already passed today, assume it's for tomorrow
+          if (targetTime.getTime() < today.getTime()) {
+            targetTime.setDate(targetTime.getDate() + 1);
+          }
+        }
+      }
+
+      if (targetTime && !isNaN(targetTime.getTime())) {
+        if (now) {
+          // Calculate countdown
+          const remainingMs = targetTime.getTime() - now;
+          if (remainingMs > 0) {
+            // Show countdown when there's time remaining
+            const remainingSeconds = Math.ceil(remainingMs / 1000);
+            parts.push(formatDuration(remainingSeconds));
+          } else {
+            // Time has passed, show target altitude instead
+            if (targetAlt !== null) {
+              parts.push(`waiting for ${targetAlt.toFixed(1)}°`);
+            } else {
+              // Fallback if no target altitude available
+              parts.push(`waiting...`);
+            }
+          }
+        } else {
+          // Fallback to static time display if no current time provided
+          const displayTime = targetTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          parts.push(`at ${displayTime}`);
+        }
+        return parts; // Return early when ExpectedTime is available
+      }
+    }
+
+    // Check for CalculatedWaitDuration directly on the item
+    const calculatedDuration = (item as Record<string, unknown>).CalculatedWaitDuration ||
+                               (item as Record<string, unknown>).calculatedWaitDuration;
+    if (calculatedDuration) {
+      // Parse duration string like "02:40:25.9083582"
+      const durationMatch = String(calculatedDuration).match(/(\d+):(\d+):(\d+)/);
+      if (durationMatch) {
+        const hours = parseInt(durationMatch[1], 10);
+        const minutes = parseInt(durationMatch[2], 10);
+        const seconds = parseInt(durationMatch[3], 10);
+        const totalSeconds = hours * 3600 + minutes * 60 + seconds;
+        if (totalSeconds > 0) {
+          parts.push(formatDuration(totalSeconds));
+        }
+      }
+    }
+
+    // If no timing info, show current altitude and target
+    if (!parts.length) {
+      if (currentAlt !== null) {
+        parts.push(`currently ${currentAlt.toFixed(1)}°`);
+      }
+      if (targetAlt !== null) {
+        parts.push(`wait for ${targetAlt.toFixed(1)}°`);
+      }
+    }
+
+    // Final fallback to metadata fields
+    if (!parts.length) {
+      const waitSeconds = coerceNumber(metadata["WaitSeconds"] ||
+                                       metadata["Duration"] ||
+                                       metadata["Seconds"]);
+      if (waitSeconds) {
+        parts.push(formatDuration(waitSeconds));
       }
     }
 
