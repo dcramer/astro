@@ -7,50 +7,48 @@ This document describes the folder structure and organization strategy for manag
 
 ```
 /mnt/astro/
-├── unprocessed/              # Raw incoming data from N.I.N.A. (via Robocopy)
+├── Unprocessed/              # Raw incoming data from N.I.N.A. (via Robocopy)
 │   └── [YYYY-MM-DD]/         # Session folders auto-created by N.I.N.A.
 │       ├── *_LIGHT_*.fits    # Light frames
 │       ├── FLAT_*.fits       # Flat frames
 │       ├── DARK_*.fits       # Dark frames
 │       └── BIAS_*.fits       # Bias frames
 │
-├── calibration/              # Raw calibration frames
-│   ├── bias/
+├── Calibration/              # Raw calibration frames
+│   ├── Bias/
 │   │   └── g[gain]_o[offset]/
 │   │       └── [YYYY-MM-DD]/
 │   │           └── BIAS_*.fits
-│   ├── darks/
+│   ├── Darks/
 │   │   └── [exposure]s_[temp]_g[gain]_o[offset]/
 │   │       └── [YYYY-MM-DD]/
 │   │           └── DARK_*.fits
-│   └── flats/
+│   └── Flats/
 │       └── [YYYY-MM-DD]/
 │           └── [filter]/     # Session-specific, organized by filter
 │               └── FLAT_*.fits
 │
-├── masters/                  # Processed master calibration frames
-│   ├── darks/
+├── Masters/                  # Processed master calibration frames
+│   ├── Darks/
 │   │   └── [exposure]s_[temp]_g[gain]_o[offset]/
 │   │       └── master_dark_[YYYY-MM-DD].xisf
-│   └── bias/
+│   └── Bias/
 │       └── g[gain]_o[offset]/
 │           └── master_bias_[YYYY-MM-DD].xisf
 │
-└── targets/                  # Organized by target
+└── Targets/                  # Organized by target
     ├── M42_Orion_Nebula/
-    │   ├── captures/         # Raw light frames by session
-    │   │   └── [YYYY-MM-DD]/
-    │   │       └── LIGHTS/
-    │   │           └── *_LIGHT_*.fits
-    │   ├── calibrated/       # WBPP output
+    │   ├── [YYYY-MM-DD]/     # Session folders with raw light frames
+    │   │   └── *_LIGHT_*.fits
+    │   ├── Calibrated/       # WBPP output
     │   │   └── [YYYY-MM-DD]/
     │   │       └── *.xisf   # Calibrated frames
-    │   ├── integration/      # Combined data
-    │   │   ├── masters/      # Master lights per filter
-    │   │   └── working/      # Integration workspace
-    │   └── results/          # Final processed images
+    │   ├── Integration/      # Combined data
+    │   │   ├── Masters/      # Master lights per filter
+    │   │   └── Working/      # Integration workspace
+    │   └── Results/          # Final processed images
     │       ├── [YYYY-MM-DD]_M42_[filter/palette].tif
-    │       └── web/          # JPEG exports for sharing
+    │       └── Web/          # JPEG exports for sharing
     │
     └── NGC7380_Wizard_Nebula/
         └── [same structure...]
@@ -60,23 +58,23 @@ This document describes the folder structure and organization strategy for manag
 
 ### Calibration Folders (Raw Frames)
 **Darks & Bias** - Organized by parameters for reuse across sessions:
-- **Darks:** `calibration/darks/[exposure]s_[temp]_g[gain]_o[offset]/[YYYY-MM-DD]/`
-  - Example: `calibration/darks/300s_-10C_g100_o50/2024-12-15/`
+- **Darks:** `Calibration/Darks/[exposure]s_[temp]_g[gain]_o[offset]/[YYYY-MM-DD]/`
+  - Example: `Calibration/Darks/300s_-10C_g100_o50/2024-12-15/`
   - Temperature critical due to dark current
-- **Bias:** `calibration/bias/g[gain]_o[offset]/[YYYY-MM-DD]/`
-  - Example: `calibration/bias/g100_o50/2024-12-15/`
+- **Bias:** `Calibration/Bias/g[gain]_o[offset]/[YYYY-MM-DD]/`
+  - Example: `Calibration/Bias/g100_o50/2024-12-15/`
   - Temperature independent (readout noise pattern)
 
 **Flats** - Session-specific due to dust, rotation:
-- **Flats:** `calibration/flats/[YYYY-MM-DD]/[filter]/`
-  - Example: `calibration/flats/2024-12-15/Ha/`
+- **Flats:** `Calibration/Flats/[YYYY-MM-DD]/[filter]/`
+  - Example: `Calibration/Flats/2024-12-15/Ha/`
 
 ### Masters Folders (Processed Calibration)
 Integrated master frames from PixInsight:
-- **Master Darks:** `masters/darks/[exposure]s_[temp]_g[gain]_o[offset]/`
-  - Example: `masters/darks/300s_-10C_g100_o50/master_dark_2024-12-15.xisf`
-- **Master Bias:** `masters/bias/g[gain]_o[offset]/`
-  - Example: `masters/bias/g100_o50/master_bias_2024-12-15.xisf`
+- **Master Darks:** `Masters/Darks/[exposure]s_[temp]_g[gain]_o[offset]/`
+  - Example: `Masters/Darks/300s_-10C_g100_o50/master_dark_2024-12-15.xisf`
+- **Master Bias:** `Masters/Bias/g[gain]_o[offset]/`
+  - Example: `Masters/Bias/g100_o50/master_bias_2024-12-15.xisf`
 
 ### Target Names
 - Use common name with catalog designation
@@ -107,38 +105,38 @@ Run the organization script after each imaging session:
 
 The script will:
 - Parse target names from LIGHT frame filenames
-- Move LIGHT frames to `targets/[target]/captures/[date]/`
-- Sort all calibration frames to `calibration/[type]/[date]/`
+- Move LIGHT frames to `Targets/[target]/[date]/`
+- Sort all calibration frames to `Calibration/[type]/[date]/`
 - Create target folder structure for new targets
 - Note: Master creation is done separately in PixInsight
 
 ### 3. Calibration (PixInsight WBPP)
-- Input: `targets/[target]/captures/[date]/LIGHTS/`
-- Raw calibration: Pull from `calibration/[type]/[date]/`
-- Master calibration: Pull from `masters/` if available
-- Output: `targets/[target]/calibrated/[date]/`
+- Input: `Targets/[target]/[date]/` (light frames)
+- Raw calibration: Pull from `Calibration/[type]/[date]/`
+- Master calibration: Pull from `Masters/` if available
+- Output: `Targets/[target]/Calibrated/[date]/`
 
 ### 4. Integration (PixInsight)
-- Work in `targets/[target]/integration/working/`
-- Save masters to `targets/[target]/integration/masters/`
+- Work in `Targets/[target]/Integration/Working/`
+- Save masters to `Targets/[target]/Integration/Masters/`
 - Keep intermediate files until project complete
 
 ### 5. Processing & Export
-- Final images saved to `targets/[target]/results/`
+- Final images saved to `Targets/[target]/Results/`
 - Include processing date and filter/palette in filename
 - Export web-ready versions for sharing
 
 ## Calibration Management
 
 ### Master Creation Process
-1. Collect 20+ raw frames from `calibration/[type]/[date]/`
+1. Collect 20+ raw frames from `Calibration/[type]/[date]/`
 2. Use PixInsight's ImageIntegration with sigma clipping
-3. Save masters to `masters/[type]/[parameters]/`
+3. Save masters to `Masters/[type]/[parameters]/`
 4. Name format: `master_[type]_[YYYY-MM-DD].xisf`
 
 ### Retention Policy
-- Raw calibration frames in `calibration/`: Keep for 3-6 months
-- Master calibrations in `masters/`: Keep indefinitely
+- Raw calibration frames in `Calibration/`: Keep for 3-6 months
+- Master calibrations in `Masters/`: Keep indefinitely
 - Always preserve masters with matching temperature, gain, and exposure
 
 ### Matching Criteria for Calibration
@@ -151,34 +149,32 @@ When selecting calibration frames:
 
 ### Multi-Session Projects
 For targets imaged across multiple nights:
-- Each session gets its own `captures/[date]/` folder
-- Calibrated frames from all sessions go to respective `calibrated/[date]/` folders
-- Integration combines all calibrated data in `integration/`
+- Each session gets its own `[date]/` folder with light frames
+- Calibrated frames from all sessions go to respective `Calibrated/[date]/` folders
+- Integration combines all calibrated data in `Integration/`
 
 ### Mosaics
 Create sub-folders for panels:
 ```
-targets/NGC7000_North_America_Mosaic/
-├── captures/
-│   ├── panel1/[date]/
-│   ├── panel2/[date]/
-│   └── panel3/[date]/
+Targets/NGC7000_North_America_Mosaic/
+├── panel1/[date]/
+├── panel2/[date]/
+└── panel3/[date]/
 ```
 
 ### Filter Sets
 Organize by filter when relevant:
 ```
-targets/M42_Orion_Nebula/
-├── captures/
-│   └── 2024-12-15/
-│       ├── Ha/
-│       ├── OIII/
-│       └── SII/
+Targets/M42_Orion_Nebula/
+└── 2024-12-15/
+    ├── Ha/
+    ├── OIII/
+    └── SII/
 ```
 
 ## Backup Strategy
 - Primary storage: `/mnt/astro` on NAS
-- Cloud backup: `targets/*/results/` only (finished images)
+- Cloud backup: `Targets/*/Results/` only (finished images)
 - Archive to external drive: Complete projects after processing
 - Raw frames: Keep for 1 year minimum, then evaluate
 
