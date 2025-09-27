@@ -252,6 +252,140 @@ export function findSequenceItemByPath(
   return currentItem;
 }
 
+function isTargetContainer(item: NinaSequenceItem): boolean {
+  return item.name === "Targets_Container" || item.name === "Targets Container";
+}
+
+function extractTargetName(itemName: string): string | null {
+  if (!itemName) return null;
+
+  // Remove "_Container" suffix if present
+  const cleaned = itemName.replace(/_Container$/i, "").replace(/ Container$/i, "").trim();
+
+  // Don't return generic container names
+  if (cleaned.toLowerCase() === "targets" || cleaned.toLowerCase() === "target") {
+    return null;
+  }
+
+  return cleaned;
+}
+
+function findTargetsInContainer(container: NinaSequenceItem): string[] {
+  const targets: string[] = [];
+
+  if (!container.items) return targets;
+
+  for (const item of container.items) {
+    const targetName = extractTargetName(item.name);
+    if (targetName) {
+      targets.push(targetName);
+    }
+  }
+
+  return targets;
+}
+
+export function findCurrentImagingTarget(
+  sequenceData: AdvancedSequenceSnapshot | null,
+): string | null {
+  if (!sequenceData?.items) {
+    return null;
+  }
+
+  // First, try to find the target from the current breadcrumb path
+  if (sequenceData.breadcrumb?.length) {
+    // Check if we're currently inside a Targets_Container
+    let insideTargetsContainer = false;
+    let lastTarget: string | null = null;
+
+    for (let i = 0; i < sequenceData.breadcrumb.length; i++) {
+      const segment = sequenceData.breadcrumb[i];
+
+      if (segment === "Targets_Container" || segment === "Targets Container") {
+        insideTargetsContainer = true;
+        continue;
+      }
+
+      if (insideTargetsContainer) {
+        const targetName = extractTargetName(segment);
+        if (targetName) {
+          lastTarget = targetName;
+        }
+      }
+    }
+
+    if (lastTarget) {
+      return lastTarget;
+    }
+  }
+
+  // If we couldn't find a target in the current path, search the entire sequence
+  // Look for all Targets_Container items
+  const findTargetsRecursive = (
+    items: ReadonlyArray<NinaSequenceItem>,
+    currentPath: string[] = [],
+  ): { path: string[]; target: string }[] => {
+    const results: { path: string[]; target: string }[] = [];
+
+    for (const item of items) {
+      const itemPath = [...currentPath, item.name];
+
+      if (isTargetContainer(item)) {
+        // Found a targets container, extract targets from its children
+        const targets = findTargetsInContainer(item);
+        for (const target of targets) {
+          results.push({ path: [...itemPath, target], target });
+        }
+      }
+
+      // Recurse into children
+      if (item.items?.length) {
+        results.push(...findTargetsRecursive(item.items, itemPath));
+      }
+    }
+
+    return results;
+  };
+
+  const allTargets = findTargetsRecursive(sequenceData.items);
+
+  if (allTargets.length === 0) {
+    return null;
+  }
+
+  // If we have a current breadcrumb, try to find the closest target
+  if (sequenceData.breadcrumb?.length) {
+    // Find targets that come before or at our current position
+    const currentDepth = sequenceData.breadcrumb.length;
+
+    // Look for the most recently passed target
+    let bestMatch: { path: string[]; target: string } | null = null;
+
+    for (const targetInfo of allTargets) {
+      // Check if this target is in our path or before us
+      let matches = true;
+      for (let i = 0; i < Math.min(targetInfo.path.length, currentDepth); i++) {
+        if (i < sequenceData.breadcrumb.length &&
+            targetInfo.path[i] !== sequenceData.breadcrumb[i]) {
+          matches = false;
+          break;
+        }
+      }
+
+      if (matches) {
+        bestMatch = targetInfo;
+      }
+    }
+
+    if (bestMatch) {
+      return bestMatch.target;
+    }
+  }
+
+  // Fall back to the first target in the sequence
+  return allTargets[0].target;
+}
+
 function coerceNumber(value: unknown): number | null {
   if (typeof value === "number" && Number.isFinite(value)) {
     return value;
@@ -290,11 +424,305 @@ function getMetadataNumber(
   return null;
 }
 
-export function formatSequenceProgressSuffix(item: NinaSequenceItem | null): string | null {
+type SequenceDetailExtractor = (item: NinaSequenceItem, now?: number) => string[];
+
+const sequenceDetailExtractors: Record<string, SequenceDetailExtractor> = {
+  "Wait for Time": (item, now) => {
+    const parts: string[] = [];
+
+    // Check for TargetTime directly on the item (from the JSON structure)
+    const targetTimeValue = (item as any).TargetTime ||
+                           (item as any).targetTime ||
+                           item.metadata?.["TargetTime"] ||
+                           item.metadata?.["WaitUntil"] ||
+                           item.metadata?.["Time"];
+
+    if (targetTimeValue) {
+      const targetTime = new Date(String(targetTimeValue));
+      if (!isNaN(targetTime.getTime())) {
+        if (now) {
+          // Calculate countdown
+          const remainingMs = targetTime.getTime() - now;
+          if (remainingMs > 0) {
+            const remainingSeconds = Math.ceil(remainingMs / 1000);
+            parts.push(formatDuration(remainingSeconds));
+          } else {
+            // Time has passed
+            parts.push(`waiting...`);
+          }
+        } else {
+          // Fallback to static time display if no current time provided
+          const timeStr = targetTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          parts.push(`until ${timeStr}`);
+        }
+      }
+    }
+
+    // Check for CalculatedWaitDuration directly on the item
+    const calculatedDuration = (item as any).CalculatedWaitDuration ||
+                               (item as any).calculatedWaitDuration;
+    if (!targetTimeValue && calculatedDuration) {
+      // Parse duration string like "02:40:25.9083582"
+      const durationMatch = String(calculatedDuration).match(/(\d+):(\d+):(\d+)/);
+      if (durationMatch) {
+        const hours = parseInt(durationMatch[1], 10);
+        const minutes = parseInt(durationMatch[2], 10);
+        const seconds = parseInt(durationMatch[3], 10);
+        const totalSeconds = hours * 3600 + minutes * 60 + seconds;
+        if (totalSeconds > 0) {
+          parts.push(`${formatDuration(totalSeconds)}`);
+        }
+      }
+    }
+
+    // Fallback to metadata fields
+    if (!targetTimeValue && !calculatedDuration) {
+      const waitSeconds = coerceNumber(item.metadata?.["WaitSeconds"] ||
+                                       item.metadata?.["Duration"] ||
+                                       item.metadata?.["Seconds"]);
+      if (waitSeconds) {
+        parts.push(`${formatDuration(waitSeconds)}`);
+      }
+    }
+
+    return parts;
+  },
+
+  "Wait For Altitude": (item) => {
+    const parts: string[] = [];
+    const metadata = item.metadata || {};
+
+    const targetAlt = coerceNumber(metadata["TargetAltitude"] || metadata["Altitude"]);
+    if (targetAlt) {
+      parts.push(`${targetAlt.toFixed(1)}°`);
+    }
+
+    const comparison = metadata["Comparator"] || metadata["Comparison"] || metadata["Direction"];
+    if (comparison) {
+      const comp = String(comparison).toLowerCase();
+      if (comp.includes("rising") || comp.includes("above")) {
+        parts.push("rising");
+      } else if (comp.includes("setting") || comp.includes("below")) {
+        parts.push("setting");
+      }
+    }
+
+    return parts;
+  },
+
+  "Take Exposure": (item) => {
+    const parts: string[] = [];
+    const metadata = item.metadata || {};
+
+    const exposureTime = coerceNumber(metadata["ExposureTime"] || metadata["Duration"] || metadata["Time"]);
+    if (exposureTime) {
+      parts.push(`${formatDuration(exposureTime)}`);
+    }
+
+    const filter = metadata["Filter"] || metadata["FilterName"];
+    if (filter) {
+      parts.push(String(filter));
+    }
+
+    const binning = metadata["Binning"] || metadata["BinX"];
+    if (binning) {
+      parts.push(`Bin ${binning}`);
+    }
+
+    const gain = coerceNumber(metadata["Gain"]);
+    if (gain !== null) {
+      parts.push(`Gain ${gain}`);
+    }
+
+    return parts;
+  },
+
+  "Switch Filter": (item) => {
+    const parts: string[] = [];
+    const metadata = item.metadata || {};
+
+    const filter = metadata["Filter"] || metadata["FilterName"] || metadata["TargetFilter"];
+    if (filter) {
+      parts.push(`→ ${filter}`);
+    }
+
+    return parts;
+  },
+
+  "Cool Camera": (item) => {
+    const parts: string[] = [];
+    const metadata = item.metadata || {};
+
+    const targetTemp = coerceNumber(metadata["TargetTemperature"] || metadata["Temperature"]);
+    if (targetTemp !== null) {
+      parts.push(`${targetTemp}°C`);
+    }
+
+    const duration = coerceNumber(metadata["Duration"] || metadata["CoolDuration"]);
+    if (duration) {
+      parts.push(`over ${formatDuration(duration)}`);
+    }
+
+    return parts;
+  },
+
+  "Run Autofocus": (item) => {
+    const parts: string[] = [];
+    const metadata = item.metadata || {};
+
+    const stepSize = coerceNumber(metadata["StepSize"] || metadata["AutoFocusStepSize"]);
+    if (stepSize) {
+      parts.push(`step ${stepSize}`);
+    }
+
+    const exposureTime = coerceNumber(metadata["ExposureTime"] || metadata["AutoFocusExposureTime"]);
+    if (exposureTime) {
+      parts.push(`${formatDuration(exposureTime)}`);
+    }
+
+    return parts;
+  },
+
+  "Slew to Target": (item) => {
+    const parts: string[] = [];
+    const metadata = item.metadata || {};
+
+    const coordinates = metadata["Coordinates"] || metadata["Target"] || metadata["RA"];
+    if (coordinates) {
+      const coordStr = String(coordinates);
+      if (coordStr.length > 20) {
+        parts.push(coordStr.substring(0, 20) + "…");
+      } else {
+        parts.push(coordStr);
+      }
+    }
+
+    return parts;
+  },
+
+  "Center and Rotate": (item) => {
+    const parts: string[] = [];
+    const metadata = item.metadata || {};
+
+    const threshold = coerceNumber(metadata["Threshold"] || metadata["AcceptableError"]);
+    if (threshold) {
+      parts.push(`±${threshold}″`);
+    }
+
+    const rotation = coerceNumber(metadata["Rotation"] || metadata["TargetRotation"]);
+    if (rotation !== null) {
+      parts.push(`${rotation}°`);
+    }
+
+    return parts;
+  },
+
+  "Park Scope": (item) => {
+    const parts: string[] = [];
+    const metadata = item.metadata || {};
+
+    const position = metadata["ParkPosition"] || metadata["Position"];
+    if (position) {
+      parts.push(String(position));
+    }
+
+    return parts;
+  },
+
+  "Dither": (item) => {
+    const parts: string[] = [];
+    const metadata = item.metadata || {};
+
+    const pixels = coerceNumber(metadata["Pixels"] || metadata["DitherPixels"] || metadata["PixelDistance"]);
+    if (pixels) {
+      parts.push(`${pixels}px`);
+    }
+
+    const raOnly = metadata["RAOnly"] || metadata["OnlyRA"];
+    if (raOnly === true || raOnly === "true") {
+      parts.push("RA only");
+    }
+
+    return parts;
+  },
+
+  "Loop Condition": (item) => {
+    const parts: string[] = [];
+    const metadata = item.metadata || {};
+
+    const condition = metadata["Condition"] || metadata["LoopCondition"];
+    if (condition) {
+      const condStr = String(condition);
+      if (condStr.length > 15) {
+        parts.push(condStr.substring(0, 15) + "…");
+      } else {
+        parts.push(condStr);
+      }
+    }
+
+    return parts;
+  },
+
+  "Set Tracking": (item) => {
+    const parts: string[] = [];
+    const metadata = item.metadata || {};
+
+    const rate = metadata["TrackingRate"] || metadata["Rate"];
+    if (rate) {
+      parts.push(String(rate));
+    }
+
+    return parts;
+  },
+
+  "Warm Camera": (item) => {
+    const parts: string[] = [];
+    const metadata = item.metadata || {};
+
+    const duration = coerceNumber(metadata["Duration"] || metadata["WarmDuration"]);
+    if (duration) {
+      parts.push(`over ${formatDuration(duration)}`);
+    }
+
+    return parts;
+  },
+
+  "Meridian Flip": (item) => {
+    const parts: string[] = [];
+    const metadata = item.metadata || {};
+
+    const minutesAfter = coerceNumber(metadata["MinutesAfterMeridian"] || metadata["MinutesAfter"]);
+    if (minutesAfter !== null) {
+      parts.push(`+${minutesAfter}min`);
+    }
+
+    return parts;
+  },
+
+  "Plate Solve": (item) => {
+    const parts: string[] = [];
+    const metadata = item.metadata || {};
+
+    const threshold = coerceNumber(metadata["Threshold"] || metadata["AcceptableError"] || metadata["Accuracy"]);
+    if (threshold) {
+      parts.push(`±${threshold}″`);
+    }
+
+    return parts;
+  },
+};
+
+export function formatSequenceProgressSuffix(
+  item: NinaSequenceItem | null,
+  now?: number
+): string | null {
   if (!item) {
     return null;
   }
 
+  const parts: string[] = [];
+
+  // First, add iteration/exposure counts if available
   const iterationsTotal =
     toPositiveNumber(item.iterations ?? null) ||
     toPositiveNumber(getMetadataNumber(item.metadata, ["Iterations", "IterationCount"]));
@@ -313,8 +741,6 @@ export function formatSequenceProgressSuffix(item: NinaSequenceItem | null): str
       getMetadataNumber(item.metadata, ["CurrentExposure", "ExposureIteration", "ExposureIndex"]),
     );
 
-  const parts: string[] = [];
-
   if (iterationsTotal) {
     const current = iterationsCurrent ?? 0;
     parts.push(`${current}/${iterationsTotal}`);
@@ -323,6 +749,25 @@ export function formatSequenceProgressSuffix(item: NinaSequenceItem | null): str
   if (exposuresTotal) {
     const current = exposuresCurrent ?? 0;
     parts.push(`${current}/${exposuresTotal}`);
+  }
+
+  // Then add type-specific details based on the Name field
+  const itemName = item.name;
+
+  // Try exact match first
+  if (itemName && sequenceDetailExtractors[itemName]) {
+    const typeSpecificDetails = sequenceDetailExtractors[itemName](item, now);
+    parts.push(...typeSpecificDetails);
+  } else if (itemName) {
+    // Try case-insensitive partial match
+    const lowerName = itemName.toLowerCase();
+    for (const [key, extractor] of Object.entries(sequenceDetailExtractors)) {
+      if (lowerName.includes(key.toLowerCase())) {
+        const typeSpecificDetails = extractor(item, now);
+        parts.push(...typeSpecificDetails);
+        break;
+      }
+    }
   }
 
   if (!parts.length) {
@@ -567,6 +1012,27 @@ export function formatSkyQuality(
   return "—";
 }
 
+export function getFilterColor(filterName: string | null | undefined): string | null {
+  if (!filterName) return null;
+
+  const filter = filterName.trim().toLowerCase();
+
+  // RGB filters
+  if (filter === 'r' || filter === 'red') return '#ff4444';
+  if (filter === 'g' || filter === 'green') return '#44ff44';
+  if (filter === 'b' || filter === 'blue') return '#4444ff';
+
+  // Luminance
+  if (filter === 'l' || filter === 'lum' || filter === 'luminance') return '#ffffff';
+
+  // Narrowband filters (wavelength-accurate colors)
+  if (filter === 'ha' || filter === 'h-alpha' || filter === 'halpha') return '#ff4444';  // 656nm - red
+  if (filter === 'sii' || filter === 's2' || filter === 'sulfur') return '#aa0000';  // 672nm - deep red
+  if (filter === 'oiii' || filter === 'o3' || filter === 'oxygen') return '#00ddcc';  // 500nm - teal/cyan
+
+  return null;
+}
+
 export function summarizeImageHistory(
   entries: ReadonlyArray<NinaImageHistoryEntry>,
 ): ImageHistorySummary {
@@ -650,4 +1116,39 @@ export function formatHumidity(
   }
 
   return `${Math.round(weather.humidityPercent)}%`;
+}
+
+/**
+ * Fetch astronomical targets from Telescopius API based on mount coordinates
+ */
+export async function fetchTelescopiusTargets(
+  mount: NinaMountInfo | null,
+  radius: number = 30,
+  lat?: number,
+  lon?: number,
+) {
+  if (!mount || !mount.rightAscensionDegrees || !mount.declinationDegrees) {
+    return null;
+  }
+
+  try {
+    let url = `/api/telescopius?ra=${mount.rightAscensionDegrees}&dec=${mount.declinationDegrees}&radius=${radius}`;
+
+    // Add observer location if provided
+    if (lat !== undefined && lon !== undefined) {
+      url += `&lat=${lat}&lon=${lon}`;
+    }
+
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      console.error("Failed to fetch targets:", response.statusText);
+      return null;
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Error fetching Telescopius targets:", error);
+    return null;
+  }
 }

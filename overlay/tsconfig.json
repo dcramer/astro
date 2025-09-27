@@ -20,7 +20,8 @@
     ],
     "paths": {
       "@/src/*": ["./src/*"],
-      "@nina/*": ["./packages/nina/src/*"]
+      "@nina/*": ["./packages/nina/src/*"],
+      "@telescopius/*": ["./src/telescopius/*"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],

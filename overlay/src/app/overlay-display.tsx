@@ -7,11 +7,14 @@ import { getImageThumbnailUrl } from "@nina/advanced";
 import { getNinaAdvancedApiBaseUrl } from "@nina/config";
 
 import { useOverlaySession } from "./use-overlay-session";
+import { useTargetEnrichment } from "./use-target-enrichment";
 import { StatValue } from "./components/StatValue";
 import { StatsRow, type StatDefinition } from "./components/StatsRow";
+import { CompactTargetDisplay } from "./components/TargetDisplay";
 import {
   computeExposureProgress,
   findSequenceItemByPath,
+  findCurrentImagingTarget,
   formatCameraStatus,
   formatMountDisplay,
   formatAmbientTemperature,
@@ -20,6 +23,7 @@ import {
   formatSequenceProgressSuffix,
   formatSequenceStatus,
   getRemainingSeconds,
+  getFilterColor,
   normalizeSequenceBreadcrumbEntry,
   summarizeImageHistory,
 } from "./overlay-utils";
@@ -47,6 +51,13 @@ export default function OverlayDisplay({
   } =
     useOverlaySession({ baseUrl, pollMs });
   const [now, setNow] = useState(() => Date.now());
+
+  // Get enriched target information
+  const { currentTarget, isLoadingEnrichment } = useTargetEnrichment(
+    advancedStatus?.sequence,
+    mountInfo,
+    !connectionOffline
+  );
   const exposureRef = useRef<{
     key: string | null;
     initialRemaining: number | null;
@@ -204,21 +215,21 @@ export default function OverlayDisplay({
     }
   }
 
+  // Legacy target name for fallback (keeping for compatibility)
+  const imagingTarget = findCurrentImagingTarget(sequencerData);
   const targetName = connectionOffline
     ? "<Offline>"
     : hasConnected
-      ? (sequencerChain?.length
-          ? sequencerChain[0]
-          : latestImage?.targetName?.trim()) || "<No Target>"
+      ? currentTarget?.name || imagingTarget || latestImage?.targetName?.trim() || "<No Target>"
       : "<Loading>";
 
   let sequencerBreadcrumb: string[] | null = sequencerChain;
 
   const runningSequenceItem = findSequenceItemByPath(
     sequencerData?.items,
-    sequencerChain ?? sequencerData?.breadcrumb ?? null,
+    sequencerData?.breadcrumb ?? null,
   );
-  const progressSuffix = formatSequenceProgressSuffix(runningSequenceItem);
+  const progressSuffix = formatSequenceProgressSuffix(runningSequenceItem, now);
 
   if (progressSuffix) {
     sequencerCurrent = `${sequencerCurrent}${progressSuffix}`;
@@ -275,8 +286,25 @@ export default function OverlayDisplay({
               </div>
               <div className={styles.latestMetric}>
                 <span className={styles.latestMetricLabel}>Filter</span>
-                <span className={styles.latestMetricValue}>
+                <span className={styles.latestMetricValue} style={{ display: 'flex', alignItems: 'center' }}>
                   {latestImage?.filterName?.trim() ?? "—"}
+                  {(() => {
+                    const color = getFilterColor(latestImage?.filterName);
+                    if (!color) return null;
+                    return (
+                      <span
+                        style={{
+                          display: 'inline-block',
+                          width: '12px',
+                          height: '12px',
+                          borderRadius: '2px',
+                          backgroundColor: color,
+                          marginLeft: '6px',
+                          border: color === '#ffffff' ? '1px solid rgba(255,255,255,0.3)' : 'none'
+                        }}
+                      />
+                    );
+                  })()}
                 </span>
               </div>
               <div className={styles.latestMetric}>
@@ -301,7 +329,16 @@ export default function OverlayDisplay({
           <div className={`${styles.statRow} ${styles.statRowTarget}`}>
             <div className={styles.targetCard}>
               <span className={styles.targetLabel}>Target</span>
-              <p className={styles.targetName}>{targetName}</p>
+              <p className={styles.targetName}>
+                {currentTarget ? (
+                  <CompactTargetDisplay
+                    target={currentTarget}
+                    isLoading={isLoadingEnrichment}
+                  />
+                ) : (
+                  targetName
+                )}
+              </p>
             </div>
           </div>
           <StatsRow stats={rowTwoStats} className={styles.statRowCamera} />
