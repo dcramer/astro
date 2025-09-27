@@ -10,11 +10,34 @@ Keep the automation stack (N.I.N.A., APCC/APPM, helper scripts) reproducible wit
 - Drop validation notes (simulator run, live test, template import) near the relevant step so future edits inherit the context.
 
 ## Contents
-- **astro-physics-mounts.md** – APCC/APPM integration checklist for the Mach2GTO.
-- **polar-alignment.md** – Polar alignment workflow using Mach2 adjustments and the TPPA plugin.
-- **nina-sho-sequencing.md** – SHO narrowband sequencing playbook for the Advanced Sequencer.
-- Add future runbooks here for import/export, troubleshooting, and nightly checklists.
+
+### Setup & Alignment
+- **[astro-physics-mounts.md](astro-physics-mounts.md)** – APCC/APPM integration checklist for the Mach2GTO.
+- **[polar-alignment.md](polar-alignment.md)** – Polar alignment workflow using Mach2 adjustments and the TPPA plugin.
+- **[appm-workflows.md](appm-workflows.md)** – APPM pointing model creation and validation.
+
+### Calibration Workflow
+1. **[nina-dark-library.md](nina-dark-library.md)** – Dark library management for the ASI6200MM Pro.
+2. **[nina-bias-and-darks.md](nina-bias-and-darks.md)** – Quick reference for bias/dark capture.
+3. **[nina-flats.md](nina-flats.md)** – Panel flat acquisition with Flat Wizard.
+
+### Imaging Sessions
+- **[nina-sho-sequencing.md](nina-sho-sequencing.md)** – SHO narrowband sequencing playbook for the Advanced Sequencer.
+
+### Data Management
+- **[image-organization.md](image-organization.md)** – Complete folder structure and file organization strategy for all image types.
+
+## Workflow Dependencies
+
+### Typical Session Flow
+1. Start with **[astro-physics-mounts.md](astro-physics-mounts.md)** for mount setup
+2. Run **[polar-alignment.md](polar-alignment.md)** before imaging sessions
+3. Create pointing model with **[appm-workflows.md](appm-workflows.md)** if needed
+4. Ensure calibration is current:
+   - **[nina-flats.md](nina-flats.md)** → **[nina-dark-library.md](nina-dark-library.md)**
+5. Execute imaging with **[nina-sho-sequencing.md](nina-sho-sequencing.md)** for narrowband
+6. Organize all files per **[image-organization.md](image-organization.md)**
 
 ## Maintenance
 - Refresh guides whenever hardware, firmware, or plugin behavior changes.
-- Log what you tested (sim run, live data, calibration refresh) when you update a procedure so the next editor knows what’s been verified.
+- Log what you tested (sim run, live data, calibration refresh) when you update a procedure so the next editor knows what's been verified.

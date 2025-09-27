@@ -11,7 +11,7 @@ This is the working recipe I keep nearby when I want SHO (SII, Hα, OIII) data w
 - Refresh calibration libraries: matching darks for each sub length, per-filter flats, and dark flats to keep narrowband amp glow in check.
 
 ### Before the session
-Run the usual sanity checks: Powerups installed, offsets verified in `Equipment ▸ Filters`, guider connected with dither permissions, and fresh weather/moon visibility notes (Telescopius, Sky Atlas, or your favorite). Make sure the dark/flat library covers whatever exposure lengths you plan tonight.
+Run the usual sanity checks: Powerups installed, offsets verified in `Equipment ▸ Filters`, guider connected with dither permissions, and fresh weather/moon visibility notes (Telescopius, Sky Atlas, or your favorite). Ensure calibration is current via **[nina-dark-library.md](nina-dark-library.md)** for the exposure lengths you plan tonight.
 
 ### Planning the night
 I start with the moon phase. If it is brighter than ~70 % or sitting near the target, I front-load Hα blocks. For balanced colour, aim for roughly six hours per line (think 36 × 600 s), but skew to a 40/30/30 split (Hα/SII/OIII) when the structure needs help. Log the target goals inside the `nina/templates/2. Targets/` entry so the Advanced Sequencer template stays in sync with this runbook.
@@ -25,7 +25,7 @@ Inside the main loop, carve out one block per filter with `Filter Exposure`. Set
 Pure SHO doesn’t need a luminance filter—the stretched Hα master is usually the luminance layer. If I want proper star colour, I append a tiny RGB block: 30–60 s exposures, heavy dithering (every frame), and `Sequence Metadata ▸ Tag` so the stacks split cleanly. If you truly need broadband L data, cap those subs at 120–180 s and only shoot them in the darkest window so the narrowband contrast survives.
 
 ### Calibration and wrap-up
-Close with a calibration block that runs trained panel flats plus the matching dark flats (`Flat Wizard ▸ Use Trained Exposure`). Grab new darks for any exposure/temperature combo you touched tonight—Sequencer Powerups `Dark Series` is perfect if the rig sits idle before dawn. Export the sequencer log (`Sequence ▸ Save Report`) and drop the highlights into the nightly ops notes once you confirm the automation behaved.
+Close with a calibration block that runs trained panel flats plus the matching dark flats (`Flat Wizard ▸ Use Trained Exposure`). Grab new darks for any exposure/temperature combo you touched tonight—Sequencer Powerups `Dark Series` is perfect if the rig sits idle before dawn. Export the sequencer log (`Sequence ▸ Save Report`) and organize files per **[image-organization.md](image-organization.md)** guidelines.
 
 ### Quick validation pass
 - Import the updated template into the staging profile and run a simulation to double-check filter order, autofocus triggers, and plugin hooks.

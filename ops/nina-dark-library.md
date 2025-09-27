@@ -35,12 +35,14 @@ The frame counts align with industry guidance (>=30 subs) to push down dark-curr
 ## Post-processing & handoff
 1. Integrate each set in PixInsight's ImageIntegration (or WBPP) with `Sigma Low=4`, `Sigma High=3`, and output masters plus `.xrs` logs beside the stacked FITS.
 2. Run `jq empty` across the metadata JSON and template exports touched by the refresh before staging a pull request.
-3. Update `ops/calibration-index.md` with dates, exposure metadata, master filenames, median/sigma, hot-pixel counts, and validation notes.
+3. Save masters following the folder structure in [image-organization.md](image-organization.md). The folder names encode all metadata (dates, temp, gain, exposure).
 4. Import masters into the staging N.I.N.A. profile (Settings -> General -> Calibration Frames) and run a simulator job that references every duration. Document the result in session notes.
 
 ## Storage & retention
 - Keep both the integrated master and the raw subframes for at least one season so you can rebuild if a future stack needs different rejection parameters.
-- Name folders `Calibration/YYYY-MM-DD/dark-XXXs_T-10C_GAIN###_OFFSET###/` to keep automation predictable.
+- Follow the folder structure defined in [image-organization.md](image-organization.md):
+  - Raw darks: `/mnt/astro/calibration/darks/[exposure]s_[temp]_g[gain]_o[offset]/[YYYY-MM-DD]/`
+  - Masters: `/mnt/astro/masters/darks/[exposure]s_[temp]_g[gain]_o[offset]/master_dark_[YYYY-MM-DD].xisf`
 - Mirror the library to the NAS overnight; note checksum mismatches in the calibration index.
 
 ## Health monitoring

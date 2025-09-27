@@ -26,7 +26,9 @@ Fire off a 25–30 point APPM map on the current pier side (about five minutes).
 Open Plugins ▸ Three Point Polar Alignment. Choose the clearest horizon (East or West) and set the sample distance to 10–20°. Verify mount + N.I.N.A. clocks/coordinates match and wipe any old models or sync points. Enable sidereal tracking and press Start. TPPA will grab three solves, rotating RA between each. If it asks for Manual Mode, slew RA ~20° at low rate, then confirm when the camera stops. Watch the live readout as you tweak the altitude/azimuth bolts—move in small increments, always approach from the same direction, and wait for the next solve to settle before touching anything else. Stop when the total error hits your target. If the run stretches past ~15 minutes, rerun TPPA so the baseline frame is fresh.
 
 ### Step 4: Wrap it up
-TPPA cuts tracking when it finishes—turn it back on, slew to a bright target, and confirm guiding drift is gone. Jot the final residual, knob turns, and seeing conditions in the run log so we know what “good” looked like next time.
+TPPA cuts tracking when it finishes—turn it back on, slew to a bright target, and confirm guiding drift is gone. Jot the final residual, knob turns, and seeing conditions in the run log so we know what "good" looked like next time.
+
+After alignment is complete, proceed to **[appm-workflows.md](appm-workflows.md)** for pointing model creation if needed.
 
 ### Troubleshooting crib notes
 - **Plate solves fail** – Increase exposure to 3–5 s, swap to L filter, and confirm ASTAP has the right catalog.
