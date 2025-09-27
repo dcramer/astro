@@ -26,6 +26,27 @@
       },
       {
         "$id": "5",
+        "$type": "NINA.Sequencer.SequenceItem.FlatDevice.ToggleLight, NINA.Sequencer",
+        "OnOff": true,
+        "Parent": {
+          "$ref": "1"
+        },
+        "ErrorBehavior": 0,
+        "Attempts": 1
+      },
+      {
+        "$id": "6",
+        "$type": "RemoteCopy.NINAPlugin.Instructions.RobocopyStart, RemoteCopy.NINAPlugin",
+        "RobocopySrc": "C:\\Users\\PrimaLuceLab\\Documents\\N.I.N.A",
+        "RobocopyDst": "Z:\\Unprocessed",
+        "Parent": {
+          "$ref": "1"
+        },
+        "ErrorBehavior": 0,
+        "Attempts": 1
+      },
+      {
+        "$id": "7",
         "$type": "NINA.Sequencer.SequenceItem.Utility.Annotation, NINA.Sequencer",
         "Text": "Prepare equipment only when nearing nautical dusk",
         "Parent": {
@@ -35,14 +56,14 @@
         "Attempts": 1
       },
       {
-        "$id": "6",
+        "$id": "8",
         "$type": "NINA.Sequencer.SequenceItem.Utility.WaitForTime, NINA.Sequencer",
         "Hours": 19,
-        "Minutes": 47,
+        "Minutes": 46,
         "MinutesOffset": -10,
-        "Seconds": 44,
+        "Seconds": 10,
         "SelectedProvider": {
-          "$id": "7",
+          "$id": "9",
           "$type": "NINA.Sequencer.Utility.DateTimeProvider.NauticalDuskProvider, NINA.Sequencer"
         },
         "Parent": {
@@ -52,7 +73,7 @@
         "Attempts": 1
       },
       {
-        "$id": "8",
+        "$id": "10",
         "$type": "NINA.Sequencer.SequenceItem.Telescope.UnparkScope, NINA.Sequencer",
         "Parent": {
           "$ref": "1"
@@ -61,7 +82,7 @@
         "Attempts": 1
       },
       {
-        "$id": "9",
+        "$id": "11",
         "$type": "NINA.Sequencer.SequenceItem.Telescope.SetTracking, NINA.Sequencer",
         "TrackingMode": 0,
         "Parent": {
@@ -71,70 +92,10 @@
         "Attempts": 1
       },
       {
-        "$id": "10",
-        "$type": "NINA.Sequencer.Container.ParallelContainer, NINA.Sequencer",
-        "Strategy": {
-          "$type": "NINA.Sequencer.Container.ExecutionStrategy.ParallelStrategy, NINA.Sequencer"
-        },
-        "Name": "Parallel Instruction Set",
-        "Conditions": {
-          "$id": "11",
-          "$type": "System.Collections.ObjectModel.ObservableCollection`1[[NINA.Sequencer.Conditions.ISequenceCondition, NINA.Sequencer]], System.ObjectModel",
-          "$values": []
-        },
-        "IsExpanded": true,
-        "Items": {
-          "$id": "12",
-          "$type": "System.Collections.ObjectModel.ObservableCollection`1[[NINA.Sequencer.SequenceItem.ISequenceItem, NINA.Sequencer]], System.ObjectModel",
-          "$values": [
-            {
-              "$id": "13",
-              "$type": "NINA.Sequencer.SequenceItem.FlatDevice.ToggleLight, NINA.Sequencer",
-              "OnOff": true,
-              "Parent": {
-                "$ref": "10"
-              },
-              "ErrorBehavior": 0,
-              "Attempts": 1
-            },
-            {
-              "$id": "14",
-              "$type": "NINA.Sequencer.SequenceItem.Camera.CoolCamera, NINA.Sequencer",
-              "Temperature": -10.0,
-              "Duration": 0.0,
-              "Parent": {
-                "$ref": "10"
-              },
-              "ErrorBehavior": 0,
-              "Attempts": 1
-            },
-            {
-              "$id": "15",
-              "$type": "RemoteCopy.NINAPlugin.Instructions.RobocopyStart, RemoteCopy.NINAPlugin",
-              "RobocopySrc": "C:\\Users\\PrimaLuceLab\\Documents\\N.I.N.A",
-              "RobocopyDst": "Z:\\",
-              "Parent": {
-                "$ref": "10"
-              },
-              "ErrorBehavior": 0,
-              "Attempts": 1
-            },
-            {
-              "$id": "16",
-              "$type": "PixInsightTools.Instructions.StartLiveStacking, PixInsightTools",
-              "Parent": {
-                "$ref": "10"
-              },
-              "ErrorBehavior": 0,
-              "Attempts": 1
-            }
-          ]
-        },
-        "Triggers": {
-          "$id": "17",
-          "$type": "System.Collections.ObjectModel.ObservableCollection`1[[NINA.Sequencer.Trigger.ISequenceTrigger, NINA.Sequencer]], System.ObjectModel",
-          "$values": []
-        },
+        "$id": "12",
+        "$type": "NINA.Sequencer.SequenceItem.Camera.CoolCamera, NINA.Sequencer",
+        "Temperature": -10.0,
+        "Duration": 0.0,
         "Parent": {
           "$ref": "1"
         },
@@ -144,7 +105,7 @@
     ]
   },
   "Triggers": {
-    "$id": "18",
+    "$id": "13",
     "$type": "System.Collections.ObjectModel.ObservableCollection`1[[NINA.Sequencer.Trigger.ISequenceTrigger, NINA.Sequencer]], System.ObjectModel",
     "$values": []
   },

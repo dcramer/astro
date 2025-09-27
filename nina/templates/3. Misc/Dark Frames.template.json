@@ -43,6 +43,15 @@
             },
             {
               "$id": "8",
+              "$type": "NINA.Sequencer.SequenceItem.FlatDevice.CloseCover, NINA.Sequencer",
+              "Parent": {
+                "$ref": "4"
+              },
+              "ErrorBehavior": 0,
+              "Attempts": 1
+            },
+            {
+              "$id": "9",
               "$type": "NINA.Sequencer.SequenceItem.Camera.CoolCamera, NINA.Sequencer",
               "Temperature": -10.0,
               "Duration": 0.0,
@@ -53,19 +62,10 @@
               "Attempts": 1
             },
             {
-              "$id": "9",
-              "$type": "NINA.Sequencer.SequenceItem.FlatDevice.CloseCover, NINA.Sequencer",
-              "Parent": {
-                "$ref": "4"
-              },
-              "ErrorBehavior": 0,
-              "Attempts": 1
-            },
-            {
               "$id": "10",
               "$type": "RemoteCopy.NINAPlugin.Instructions.RobocopyStart, RemoteCopy.NINAPlugin",
               "RobocopySrc": "C:\\Users\\PrimaLuceLab\\Documents\\N.I.N.A",
-              "RobocopyDst": "Z:\\",
+              "RobocopyDst": "Z:\\Unprocessed",
               "Parent": {
                 "$ref": "4"
               },
