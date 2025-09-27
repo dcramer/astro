@@ -17,6 +17,15 @@
     "$values": [
       {
         "$id": "4",
+        "$type": "NINA.Sequencer.SequenceItem.FlatDevice.CloseCover, NINA.Sequencer",
+        "Parent": {
+          "$ref": "1"
+        },
+        "ErrorBehavior": 0,
+        "Attempts": 1
+      },
+      {
+        "$id": "5",
         "$type": "NINA.Sequencer.SequenceItem.Utility.Annotation, NINA.Sequencer",
         "Text": "Prepare equipment only when nearing nautical dusk",
         "Parent": {
@@ -26,14 +35,14 @@
         "Attempts": 1
       },
       {
-        "$id": "5",
+        "$id": "6",
         "$type": "NINA.Sequencer.SequenceItem.Utility.WaitForTime, NINA.Sequencer",
         "Hours": 19,
-        "Minutes": 49,
+        "Minutes": 47,
         "MinutesOffset": -10,
-        "Seconds": 17,
+        "Seconds": 44,
         "SelectedProvider": {
-          "$id": "6",
+          "$id": "7",
           "$type": "NINA.Sequencer.Utility.DateTimeProvider.NauticalDuskProvider, NINA.Sequencer"
         },
         "Parent": {
@@ -43,7 +52,7 @@
         "Attempts": 1
       },
       {
-        "$id": "7",
+        "$id": "8",
         "$type": "NINA.Sequencer.SequenceItem.Telescope.UnparkScope, NINA.Sequencer",
         "Parent": {
           "$ref": "1"
@@ -52,7 +61,7 @@
         "Attempts": 1
       },
       {
-        "$id": "8",
+        "$id": "9",
         "$type": "NINA.Sequencer.SequenceItem.Telescope.SetTracking, NINA.Sequencer",
         "TrackingMode": 0,
         "Parent": {
@@ -62,59 +71,59 @@
         "Attempts": 1
       },
       {
-        "$id": "9",
+        "$id": "10",
         "$type": "NINA.Sequencer.Container.ParallelContainer, NINA.Sequencer",
         "Strategy": {
           "$type": "NINA.Sequencer.Container.ExecutionStrategy.ParallelStrategy, NINA.Sequencer"
         },
         "Name": "Parallel Instruction Set",
         "Conditions": {
-          "$id": "10",
+          "$id": "11",
           "$type": "System.Collections.ObjectModel.ObservableCollection`1[[NINA.Sequencer.Conditions.ISequenceCondition, NINA.Sequencer]], System.ObjectModel",
           "$values": []
         },
         "IsExpanded": true,
         "Items": {
-          "$id": "11",
+          "$id": "12",
           "$type": "System.Collections.ObjectModel.ObservableCollection`1[[NINA.Sequencer.SequenceItem.ISequenceItem, NINA.Sequencer]], System.ObjectModel",
           "$values": [
             {
-              "$id": "12",
+              "$id": "13",
               "$type": "NINA.Sequencer.SequenceItem.FlatDevice.ToggleLight, NINA.Sequencer",
               "OnOff": true,
               "Parent": {
-                "$ref": "9"
-              },
-              "ErrorBehavior": 0,
-              "Attempts": 1
-            },
-            {
-              "$id": "13",
-              "$type": "NINA.Sequencer.SequenceItem.Camera.CoolCamera, NINA.Sequencer",
-              "Temperature": -10.0,
-              "Duration": 0.0,
-              "Parent": {
-                "$ref": "9"
+                "$ref": "10"
               },
               "ErrorBehavior": 0,
               "Attempts": 1
             },
             {
               "$id": "14",
-              "$type": "RemoteCopy.NINAPlugin.Instructions.RobocopyStart, RemoteCopy.NINAPlugin",
-              "RobocopySrc": "C:\\Users\\PrimaLuceLab\\Documents\\N.I.N.A",
-              "RobocopyDst": "Z:\\",
+              "$type": "NINA.Sequencer.SequenceItem.Camera.CoolCamera, NINA.Sequencer",
+              "Temperature": -10.0,
+              "Duration": 0.0,
               "Parent": {
-                "$ref": "9"
+                "$ref": "10"
               },
               "ErrorBehavior": 0,
               "Attempts": 1
             },
             {
               "$id": "15",
+              "$type": "RemoteCopy.NINAPlugin.Instructions.RobocopyStart, RemoteCopy.NINAPlugin",
+              "RobocopySrc": "C:\\Users\\PrimaLuceLab\\Documents\\N.I.N.A",
+              "RobocopyDst": "Z:\\",
+              "Parent": {
+                "$ref": "10"
+              },
+              "ErrorBehavior": 0,
+              "Attempts": 1
+            },
+            {
+              "$id": "16",
               "$type": "PixInsightTools.Instructions.StartLiveStacking, PixInsightTools",
               "Parent": {
-                "$ref": "9"
+                "$ref": "10"
               },
               "ErrorBehavior": 0,
               "Attempts": 1
@@ -122,7 +131,7 @@
           ]
         },
         "Triggers": {
-          "$id": "16",
+          "$id": "17",
           "$type": "System.Collections.ObjectModel.ObservableCollection`1[[NINA.Sequencer.Trigger.ISequenceTrigger, NINA.Sequencer]], System.ObjectModel",
           "$values": []
         },
@@ -135,7 +144,7 @@
     ]
   },
   "Triggers": {
-    "$id": "17",
+    "$id": "18",
     "$type": "System.Collections.ObjectModel.ObservableCollection`1[[NINA.Sequencer.Trigger.ISequenceTrigger, NINA.Sequencer]], System.ObjectModel",
     "$values": []
   },

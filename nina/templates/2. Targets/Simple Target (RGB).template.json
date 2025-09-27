@@ -88,7 +88,7 @@
             "DecMinutes": 0,
             "DecSeconds": 0.0
           },
-          "Offset": 35.0,
+          "Offset": 0.0,
           "Comparator": 3
         },
         "Parent": {
@@ -545,19 +545,19 @@
                         "$id": "68",
                         "$type": "NINA.Core.Model.Equipment.FlatWizardFilterSettings, NINA.Core",
                         "FlatWizardMode": 0,
-                        "HistogramMeanTarget": 0.5,
+                        "HistogramMeanTarget": 0.3,
                         "HistogramTolerance": 0.1,
-                        "MaxFlatExposureTime": 30.0,
-                        "MinFlatExposureTime": 0.01,
-                        "MaxAbsoluteFlatDeviceBrightness": 0,
-                        "MinAbsoluteFlatDeviceBrightness": 0,
+                        "MaxFlatExposureTime": 5.0,
+                        "MinFlatExposureTime": 0.25,
+                        "MaxAbsoluteFlatDeviceBrightness": 100,
+                        "MinAbsoluteFlatDeviceBrightness": 5,
                         "Gain": -1,
                         "Offset": -1,
                         "Binning": {
                           "$id": "69",
                           "$type": "NINA.Core.Model.Equipment.BinningMode, NINA.Core",
-                          "X": 1,
-                          "Y": 1
+                          "X": 2,
+                          "Y": 2
                         }
                       },
                       "_autoFocusBinning": {
