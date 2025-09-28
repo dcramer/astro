@@ -65,7 +65,7 @@
               "$id": "10",
               "$type": "RemoteCopy.NINAPlugin.Instructions.RobocopyStart, RemoteCopy.NINAPlugin",
               "RobocopySrc": "C:\\Users\\PrimaLuceLab\\Documents\\N.I.N.A",
-              "RobocopyDst": "Z:\\Unprocessed",
+              "RobocopyDst": "Z:\\",
               "Parent": {
                 "$ref": "4"
               },

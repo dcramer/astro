@@ -37,8 +37,8 @@
       {
         "$id": "6",
         "$type": "RemoteCopy.NINAPlugin.Instructions.RobocopyStart, RemoteCopy.NINAPlugin",
-        "RobocopySrc": "C:\\Users\\PrimaLuceLab\\Documents\\N.I.N.A",
-        "RobocopyDst": "Z:\\Unprocessed",
+        "RobocopySrc": "C:\\Users\\PrimaLuceLab\\Documents\\N.I.N.A\\",
+        "RobocopyDst": "Z:\\",
         "Parent": {
           "$ref": "1"
         },
@@ -59,9 +59,9 @@
         "$id": "8",
         "$type": "NINA.Sequencer.SequenceItem.Utility.WaitForTime, NINA.Sequencer",
         "Hours": 19,
-        "Minutes": 46,
+        "Minutes": 44,
         "MinutesOffset": -10,
-        "Seconds": 10,
+        "Seconds": 49,
         "SelectedProvider": {
           "$id": "9",
           "$type": "NINA.Sequencer.Utility.DateTimeProvider.NauticalDuskProvider, NINA.Sequencer"
