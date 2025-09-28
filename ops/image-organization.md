@@ -7,8 +7,8 @@ This document describes the folder structure and organization strategy for manag
 
 ```
 /mnt/astro/
-├── Unprocessed/              # Raw incoming data from N.I.N.A. (via Robocopy)
-│   └── [YYYY-MM-DD]/         # Session folders auto-created by N.I.N.A.
+├── Unprocessed/              # Raw incoming data from N.I.N.A. (Robocopy pulls from C:\\Users\\PrimaLuceLab\\Documents\\N.I.N.A\\Unprocessed\\)
+│   └── [YYYY-MM-DD]/         # Session folders generated via $$DATEMINUS12$$ token
 │       ├── *_LIGHT_*.fits    # Light frames
 │       ├── FLAT_*.fits       # Flat frames
 │       ├── DARK_*.fits       # Dark frames
@@ -85,14 +85,22 @@ Integrated master frames from PixInsight:
   - `IC1396_Elephants_Trunk`
 
 ### File Names (from N.I.N.A.)
-Standard N.I.N.A. pattern is preserved:
-`[Target]_[Filter]_[Exposure]s_[Temp]C_[Gain]_[Sequence].fits`
+Current imaging profile (updated 2025-09-28) writes to `./Unprocessed` with the filename pattern:
+`$$DATEMINUS12$$\$$IMAGETYPE$$\$$TARGETNAME$$_$$DATETIME$$_$$FILTER$$_$$SENSORTEMP$$_$$EXPOSURETIME$$s_$$BINNING$$_$$FRAMENR$$`
+
+This yields paths such as:
+```
+C:\Users\PrimaLuceLab\Documents\N.I.N.A\Unprocessed\2025-09-27\LIGHT\NGC7380_Wizard_Nebula_2025-09-28T01-25-30_Ha_-10C_600s_1x1_0001.fits
+```
+- `$$DATEMINUS12$$` creates the nightly session folder (local date minus 12 hours to keep post-midnight subs grouped with the previous evening).
+- `$$IMAGETYPE$$` builds the calibration subfolders (`LIGHT`, `FLAT`, `DARK`, etc.).
+- Remaining tokens preserve target, timestamp, filter, sensor temperature, exposure length, binning, and frame counter for downstream parsing.
 
 ## Workflow
 
 ### 1. Acquisition (N.I.N.A.)
-- N.I.N.A. saves all frames to `/mnt/astro/unprocessed/[date]/`
-- Robocopy or direct network write handles the transfer
+- N.I.N.A. now saves all frames to `C:\Users\PrimaLuceLab\Documents\N.I.N.A\Unprocessed\[date]\[imagetype]\` using the pattern above.
+- Robocopy (or direct network write) mirrors that tree to `/mnt/astro/unprocessed/[date]/` for the NAS-backed workflow.
 
 ### 2. Organization (Script)
 Run the organization script after each imaging session:
