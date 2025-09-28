@@ -7,10 +7,6 @@ settings:
 importers:
 
   .:
-    dependencies:
-      '@observerly/fits':
-        specifier: ^0.1.0
-        version: 0.1.0
     devDependencies:
       '@types/node':
         specifier: ^22.0.0
@@ -180,10 +176,6 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@observerly/fits@0.1.0':
-    resolution: {integrity: sha512-O/feoeq74v1r0V2NCXleUDvdvgxj/saO3GMUPBNZRC0EY6TYN/VKF31upzN9B9FjlTlEmJCjIV/bv33xGcI7pA==}
-    os: [darwin, linux]
-
   '@types/node@22.18.6':
     resolution: {integrity: sha512-r8uszLPpeIWbNKtvWRt/DbVi5zbqZyj1PTmhRMqBMvDnaz1QpmSKujUtJLrqGZeoM8v72MfYggDceY4K1itzWQ==}
 
@@ -295,8 +287,6 @@ snapshots:
 
   '@esbuild/win32-x64@0.25.9':
     optional: true
-
-  '@observerly/fits@0.1.0': {}
 
   '@types/node@22.18.6':
     dependencies:

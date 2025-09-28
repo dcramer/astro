@@ -27,6 +27,14 @@ interface FileInfo {
   offset?: number;
   binning?: string;
   sessionDate: string;
+  fwhm?: number;
+}
+
+interface MetadataMismatch {
+  file: string;
+  field: string;
+  filenameValue: string | number | undefined;
+  headerValue: string | number | undefined;
 }
 
 class AstroOrganizer {
@@ -34,6 +42,8 @@ class AstroOrganizer {
   private filesSkipped = 0;
   private errors: string[] = [];
   private operations: Array<{ from: string; to: string; type: string }> = [];
+  private metadataMismatches: MetadataMismatch[] = [];
+  private metadataChecks = 0;
   private config: Config;
 
   constructor(config: Config) {
@@ -194,6 +204,302 @@ class AstroOrganizer {
     }
 
     return info;
+  }
+
+  private normalizeFilter(filter: string): string {
+    return filter.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+  }
+
+  private normalizeBinning(value: string | number): string | undefined {
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      const rounded = Math.max(1, Math.round(value));
+      return `${rounded}x${rounded}`;
+    }
+
+    const trimmed = String(value).trim();
+    const match = trimmed.match(/(\d+)\s*[xX]\s*(\d+)/);
+    if (match) {
+      return `${match[1]}x${match[2]}`;
+    }
+
+    const numeric = parseInt(trimmed, 10);
+    if (!Number.isNaN(numeric)) {
+      return `${numeric}x${numeric}`;
+    }
+
+    return undefined;
+  }
+
+  private recordMismatch(
+    fileInfo: FileInfo,
+    field: string,
+    filenameValue: string | number | undefined,
+    headerValue: string | number | undefined
+  ): void {
+    this.metadataMismatches.push({
+      file: fileInfo.filename,
+      field,
+      filenameValue,
+      headerValue
+    });
+    this.log(
+      `Metadata mismatch for ${fileInfo.filename} (${field}): filename=${filenameValue ?? 'n/a'} header=${headerValue ?? 'n/a'}`,
+      'warn'
+    );
+  }
+
+  private async readFitsHeaders(
+    filePath: string
+  ): Promise<Map<string, string | number | boolean> | null> {
+    const CARD_SIZE = 80;
+    const BLOCK_SIZE = 2880;
+    const MAX_BLOCKS = 32;
+    let handle: fs.FileHandle | null = null;
+
+    try {
+      handle = await fs.open(filePath, 'r');
+      const headers = new Map<string, string | number | boolean>();
+      const buffer = Buffer.alloc(BLOCK_SIZE);
+      let offset = 0;
+      let endFound = false;
+
+      for (let block = 0; block < MAX_BLOCKS && !endFound; block++) {
+        const { bytesRead } = await handle.read(buffer, 0, BLOCK_SIZE, offset);
+        if (bytesRead <= 0) {
+          break;
+        }
+
+        const chunk = buffer.subarray(0, bytesRead).toString('ascii');
+
+        for (let i = 0; i < chunk.length; i += CARD_SIZE) {
+          const card = chunk.slice(i, i + CARD_SIZE);
+          if (!card.trim()) {
+            continue;
+          }
+
+          const key = card.slice(0, 8).trim();
+          if (!key) {
+            continue;
+          }
+
+          if (key === 'END') {
+            endFound = true;
+            break;
+          }
+
+          if (card[8] !== '=' || card[9] !== ' ') {
+            continue;
+          }
+
+          let valuePart = card.slice(10);
+          const commentIndex = valuePart.indexOf('/');
+          if (commentIndex !== -1) {
+            valuePart = valuePart.slice(0, commentIndex);
+          }
+
+          const trimmedValue = valuePart.trim();
+          if (!trimmedValue) {
+            continue;
+          }
+
+          let value: string | number | boolean = trimmedValue;
+
+          if (trimmedValue.startsWith("'") && trimmedValue.endsWith("'")) {
+            value = trimmedValue.slice(1, -1).trim();
+          } else if (/^[TF]$/i.test(trimmedValue)) {
+            value = trimmedValue.toUpperCase() === 'T';
+          } else {
+            const numeric = Number(trimmedValue);
+            if (!Number.isNaN(numeric)) {
+              value = numeric;
+            }
+          }
+
+          headers.set(key.toUpperCase(), value);
+        }
+
+        offset += bytesRead;
+
+        if (bytesRead < BLOCK_SIZE) {
+          break;
+        }
+      }
+
+      return headers;
+    } catch (error) {
+      this.log(
+        `Failed to read FITS header for ${path.basename(filePath)}: ${error}`,
+        'warn'
+      );
+      return null;
+    } finally {
+      if (handle) {
+        await handle.close().catch(() => {
+          /* ignore */
+        });
+      }
+    }
+  }
+
+  private async verifyWithFitsHeader(fileInfo: FileInfo): Promise<void> {
+    if (!/\.fits?$/i.test(fileInfo.filename)) {
+      return;
+    }
+
+    const headers = await this.readFitsHeaders(fileInfo.path);
+    if (!headers || headers.size === 0) {
+      return;
+    }
+
+    const getHeaderValue = (key: string): string | number | boolean | undefined => {
+      return headers.get(key.toUpperCase());
+    };
+
+    const getString = (keys: string[]): string | undefined => {
+      for (const key of keys) {
+        const value = getHeaderValue(key);
+        if (typeof value === 'string') {
+          const trimmed = value.trim();
+          if (trimmed.length > 0) {
+            return trimmed;
+          }
+        } else if (typeof value === 'number' || typeof value === 'boolean') {
+          return String(value);
+        }
+      }
+      return undefined;
+    };
+
+    const getNumber = (keys: string[]): number | undefined => {
+      for (const key of keys) {
+        const value = getHeaderValue(key);
+        if (typeof value === 'number' && Number.isFinite(value)) {
+          return value;
+        }
+        if (typeof value === 'string') {
+          const parsed = Number(value);
+          if (!Number.isNaN(parsed)) {
+            return parsed;
+          }
+        }
+      }
+      return undefined;
+    };
+
+    const headerTargetRaw = getString(['OBJECT', 'TARGET', 'TARGNAME']);
+    if (headerTargetRaw && fileInfo.type === 'LIGHT') {
+      const sanitized = this.sanitizeTargetName(headerTargetRaw);
+      if (sanitized) {
+        if (fileInfo.target) {
+          this.metadataChecks++;
+          if (sanitized !== fileInfo.target) {
+            this.recordMismatch(fileInfo, 'target', fileInfo.target, sanitized);
+          }
+        } else {
+          fileInfo.target = sanitized;
+        }
+      }
+    }
+
+    const headerFilterRaw = getString(['FILTER', 'FILTER1', 'FILTER2']);
+    if (headerFilterRaw) {
+      const normalized = this.normalizeFilter(headerFilterRaw);
+      if (normalized) {
+        if (fileInfo.filter) {
+          this.metadataChecks++;
+          if (normalized !== fileInfo.filter) {
+            this.recordMismatch(fileInfo, 'filter', fileInfo.filter, normalized);
+          }
+        } else {
+          fileInfo.filter = normalized;
+        }
+      }
+    }
+
+    const headerExposure = getNumber(['EXPTIME', 'EXPOSURE']);
+    if (headerExposure !== undefined) {
+      if (fileInfo.exposure !== undefined) {
+        this.metadataChecks++;
+        if (Math.abs(fileInfo.exposure - headerExposure) > 0.01) {
+          this.recordMismatch(fileInfo, 'exposure', fileInfo.exposure, headerExposure);
+        }
+      } else {
+        fileInfo.exposure = headerExposure;
+      }
+    }
+
+    const headerTemperature = getNumber(['CCD-TEMP', 'CCD_TEMP', 'SENSOR_TEMP', 'SET-TEMP']);
+    if (headerTemperature !== undefined) {
+      if (fileInfo.temperature !== undefined) {
+        this.metadataChecks++;
+        if (Math.abs(fileInfo.temperature - headerTemperature) > 0.5) {
+          this.recordMismatch(fileInfo, 'temperature', fileInfo.temperature, headerTemperature);
+        }
+      } else {
+        fileInfo.temperature = headerTemperature;
+      }
+    }
+
+    const headerGain = getNumber(['GAIN']);
+    if (headerGain !== undefined) {
+      const normalizedGain = Math.round(headerGain);
+      if (fileInfo.gain !== undefined) {
+        this.metadataChecks++;
+        if (fileInfo.gain !== normalizedGain) {
+          this.recordMismatch(fileInfo, 'gain', fileInfo.gain, normalizedGain);
+        }
+      } else if (normalizedGain > 0) {
+        fileInfo.gain = normalizedGain;
+      }
+    }
+
+    const headerOffset = getNumber(['OFFSET', 'CAMERA_OFFSET']);
+    if (headerOffset !== undefined) {
+      const normalizedOffset = Math.round(headerOffset);
+      if (fileInfo.offset !== undefined) {
+        this.metadataChecks++;
+        if (fileInfo.offset !== normalizedOffset) {
+          this.recordMismatch(fileInfo, 'offset', fileInfo.offset, normalizedOffset);
+        }
+      } else if (normalizedOffset >= 0) {
+        fileInfo.offset = normalizedOffset;
+      }
+    }
+
+    const headerBinningCandidates: Array<string | number> = [];
+    const binningString = getString(['BINNING']);
+    if (binningString) headerBinningCandidates.push(binningString);
+    const xBin = getNumber(['XBINNING']);
+    const yBin = getNumber(['YBINNING']);
+    if (xBin !== undefined && yBin !== undefined) {
+      headerBinningCandidates.push(`${xBin}x${yBin}`);
+    } else if (xBin !== undefined) {
+      headerBinningCandidates.push(`${xBin}x${xBin}`);
+    } else if (yBin !== undefined) {
+      headerBinningCandidates.push(`${yBin}x${yBin}`);
+    }
+
+    let normalizedHeaderBinning: string | undefined;
+    for (const candidate of headerBinningCandidates) {
+      normalizedHeaderBinning = this.normalizeBinning(String(candidate));
+      if (normalizedHeaderBinning) break;
+    }
+
+    if (normalizedHeaderBinning) {
+      if (fileInfo.binning) {
+        this.metadataChecks++;
+        if (normalizedHeaderBinning !== fileInfo.binning) {
+          this.recordMismatch(fileInfo, 'binning', fileInfo.binning, normalizedHeaderBinning);
+        }
+      } else {
+        fileInfo.binning = normalizedHeaderBinning;
+      }
+    }
+
+    const headerFwhm = getNumber(['FWHM', 'HFR', 'HALFFLUXR']);
+    if (headerFwhm !== undefined) {
+      fileInfo.fwhm = headerFwhm;
+    }
   }
 
   private sanitizeTargetName(name: string): string {
@@ -438,6 +744,8 @@ class AstroOrganizer {
         const fileInfo = this.parseFileName(file, sessionDate);
         if (!fileInfo) continue;
 
+        await this.verifyWithFitsHeader(fileInfo);
+
         // Track targets for target structure creation
         if (fileInfo.target && !processedTargets.has(fileInfo.target)) {
           processedTargets.add(fileInfo.target);
@@ -455,6 +763,22 @@ class AstroOrganizer {
     console.log(`   Files skipped: ${this.filesSkipped}`);
     if (this.errors.length > 0) {
       console.log(`   Errors: ${this.errors.length}`);
+    }
+
+    if (this.metadataChecks > 0) {
+      console.log(`   Metadata checks: ${this.metadataChecks}`);
+      if (this.metadataMismatches.length > 0) {
+        console.log(`   Metadata mismatches: ${this.metadataMismatches.length}`);
+      }
+    }
+
+    if (this.metadataMismatches.length > 0) {
+      console.log('\n⚠️ Metadata mismatches detected:');
+      for (const mismatch of this.metadataMismatches) {
+        console.log(
+          `   ${mismatch.file} → ${mismatch.field}: filename=${mismatch.filenameValue ?? 'n/a'} header=${mismatch.headerValue ?? 'n/a'}`
+        );
+      }
     }
 
     if (this.config.dryRun && this.operations.length > 0) {

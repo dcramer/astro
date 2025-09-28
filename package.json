@@ -12,8 +12,5 @@
   "engines": {
     "node": ">=20.0.0"
   },
-  "packageManager": "pnpm@10.14.0",
-  "dependencies": {
-    "@observerly/fits": "^0.1.0"
-  }
+  "packageManager": "pnpm@10.14.0"
 }
