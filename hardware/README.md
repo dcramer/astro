@@ -42,14 +42,18 @@ Document the imaging rig so we know which components are in play when planning a
 - Servo-driven flap panel with 12-bit (0-4096) brightness control, magnetic closure, and ASCOM/INDI/ASIAIR drivers.
 - Needs 12 VDC at 3 A and uses USB-C for control. Select the FLAP194 size for the SVX152T (186 mm dew shield OD).
 
-## Filters
-| Filter | Chroma part | Intended line(s) | Nominal CWL | Bandwidth | Official resource | Notes |
-|--------|-------------|------------------|--------------|-----------|-------------------|-------|
-| Luminance (L) | 27040 Lum | Broadband luminance | 550 nm | Wideband continuum | [Chroma 27040 product page](https://www.chroma.com/products/parts/27040-lum) | Catalog Type: AS (Astronomy); used for L frames. |
-| H-alpha 3 nm | 27001 H-alpha 3nm Bandpass | H-alpha 656.28 nm | Tuned to 656.3 nm | 3 nm FWHM | [Chroma 27106 SHO set overview](https://www.chroma.com/products/sets/27106-sii-ha-oiii-3nm) | Part of the 3 nm SHO set; isolates the H-alpha emission doublet. |
-| OIII 3 nm | 27006 OIII 3nm Bandpass | [O III] 500.7 nm | Tuned to 500.7 nm | 3 nm FWHM | [Chroma 27106 SHO set overview](https://www.chroma.com/products/sets/27106-sii-ha-oiii-3nm) | Part of the 3 nm SHO set; targets the doubly ionized oxygen line. |
-| SII 3 nm | 27009 SII 3nm Bandpass | [S II] 671.6/673.1 nm | Tuned to 672.4 nm (doublet midpoint) | 3 nm FWHM | [Chroma 27106 SHO set overview](https://www.chroma.com/products/sets/27106-sii-ha-oiii-3nm) | Part of the 3 nm SHO set; captures the sulfur doublet. |
-| Dark cap | N/A (custom slot) | Closed shutter | - | - | - | Plastic cap used for darks/bias frames; no optical glass. |
+## Filters (LSHORGB Configuration)
+Filters are loaded in the ZWO EFW 7x2" in LSHORGB order (positions 1-7):
+
+| Position | Filter | Chroma part | Target | Nominal CWL | Bandwidth | Notes |
+|----------|--------|-------------|--------|-------------|-----------|-------|
+| 1 | Luminance (L) | 27040 | Broadband luminance | 550 nm | Wideband | Clear continuum for detail; [product page](https://www.chroma.com/products/parts/27040-lum) |
+| 2 | Sulfur-II (S) | 27009 | [S II] 671.6/673.1 nm | 672.4 nm | 3 nm FWHM | SHO set; captures sulfur doublet; [27106 set](https://www.chroma.com/products/sets/27106-sii-ha-oiii-3nm) |
+| 3 | Hydrogen-alpha (H) | 27001 | H-alpha 656.28 nm | 656.3 nm | 3 nm FWHM | SHO set; isolates H-alpha emission; [27106 set](https://www.chroma.com/products/sets/27106-sii-ha-oiii-3nm) |
+| 4 | Oxygen-III (O) | 27006 | [O III] 500.7 nm | 500.7 nm | 3 nm FWHM | SHO set; doubly ionized oxygen; [27106 set](https://www.chroma.com/products/sets/27106-sii-ha-oiii-3nm) |
+| 5 | Red (R) | 27041 | Red continuum | 650 nm | ~80 nm | RGB set; [product page](https://www.chroma.com/products/parts/27041-red) |
+| 6 | Green (G) | 27042 | Green continuum | ~540 nm | ~100 nm | RGB set; [product page](https://www.chroma.com/products/parts/27042-green) |
+| 7 | Blue (B) | 27043 | Blue continuum | 460 nm | ~120 nm | RGB set; [product page](https://www.chroma.com/products/parts/27043-blue) |
 
 ## Tilt / Spacing Hardware
 - **Gerd Neumann CTU-XT M68x1**: 11.3 mm optical length with three cone screws for tilt adjustment (0.2 mm per turn) against spring preload. M68x1 female threads on both sides; includes 8mm M68 male extension. Replaces an off-axis guider while maintaining rigid spacing.
