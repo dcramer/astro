@@ -69,19 +69,24 @@ crons = ["0 */6 * * *"]  # Every 6 hours
 
 ## Scoring
 
-Nights are scored 0-100 based on:
-- Cloud cover (40% weight)
-- Seeing (25% weight)
-- Transparency (20% weight)
-- Humidity (10% weight)
-- Smoke (5% weight)
+Hourly scores are weighted for urban DSO imaging:
+- Cloud cover (50%) - blocks all photons
+- Seeing (30%) - arc-seconds, lower is better
+- Transparency (15%) - extinction index, lower is better
+- Humidity (5%) - dew risk
 
-Notifications are sent when any night scores ≥ threshold (default 60).
+Notifications are sent when there are 6+ consecutive clear hours with score ≥ 60.
 
 ## Local Development
 
 ```bash
+cp .env.example .env
+# Edit .env with your credentials
+pnpm install
 pnpm dev
 ```
 
-Then visit `http://localhost:8787/check` to test.
+Then visit:
+- `http://localhost:8787/forecast` - Preview tonight's forecast
+- `http://localhost:8787/check` - Trigger notification (if conditions are good)
+- `http://localhost:8787/health` - Health check

@@ -10,7 +10,7 @@ export async function sendMessage(
   botToken: string,
   chatId: string,
   text: string,
-  parseMode: "Markdown" | "HTML" = "Markdown"
+  parseMode: "MarkdownV2" | "HTML" = "MarkdownV2"
 ): Promise<TelegramResponse> {
   const response = await fetch(
     `${TELEGRAM_API}/bot${botToken}/sendMessage`,
@@ -23,6 +23,7 @@ export async function sendMessage(
         chat_id: chatId,
         text,
         parse_mode: parseMode,
+        disable_web_page_preview: true,
       }),
     }
   );
@@ -47,7 +48,6 @@ export async function sendPhoto(
         chat_id: chatId,
         photo: photoUrl,
         caption,
-        parse_mode: "Markdown",
       }),
     }
   );

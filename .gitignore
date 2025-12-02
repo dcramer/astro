@@ -2,3 +2,6 @@ node_modules
 .pnpm-store
 
 *Zone.Identifier
+.env
+.dev.vars
+.wrangler
