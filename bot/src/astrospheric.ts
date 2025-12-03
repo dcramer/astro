@@ -311,15 +311,16 @@ export function scoreCloudCover(cloudPercent: number): number {
 /**
  * Score transparency (0-100).
  * Astrospheric returns mag/airmass extinction - LOWER IS BETTER.
- * Scale appears to be 0-30+ range where values near 0 are excellent.
+ * Very conservative scoring for light-polluted areas (SF Bortle 9).
+ * High extinction + light pollution = unworkable conditions even for narrowband.
  */
 export function scoreTransparency(rawValue: number): number {
   // Lower values = better transparency (less extinction)
-  if (rawValue <= 5) return 100;    // Excellent
-  if (rawValue <= 10) return 85;    // Very good
-  if (rawValue <= 15) return 65;    // Decent
-  if (rawValue <= 20) return 40;    // Poor
-  if (rawValue <= 25) return 20;    // Bad
+  if (rawValue <= 5) return 100;    // Excellent (rare in SF)
+  if (rawValue <= 8) return 75;     // Good enough for LP imaging
+  if (rawValue <= 12) return 35;    // Poor (LP + extinction = marginal at best)
+  if (rawValue <= 18) return 15;    // Bad (unusable in LP)
+  if (rawValue <= 25) return 5;     // Very bad
   return 0;                          // Terrible
 }
 

@@ -7,6 +7,10 @@ import {
   analyzeNight,
   formatNightSummary,
   getRatingEmoji,
+  scoreCloudCover,
+  scoreTransparency,
+  scoreSeeing,
+  scoreHumidity,
   type NightForecast,
 } from "./astrospheric";
 import {
@@ -84,6 +88,32 @@ function generateForecastHTML(tonight: NightForecast | null, lat: number, lon: n
   const clearOutsideUrl = getClearOutsideUrl(lat, lon);
   const astrosphericUrl = getAstrosphericUrl(lat, lon);
   const imageUrl = getClearOutsideImageUrl(lat, lon);
+
+  // Generate hourly breakdown table
+  const bestWindowStart = tonight.bestWindow?.startHour.getTime();
+  const bestWindowEnd = tonight.bestWindow?.endHour.getTime();
+
+  const hourlyRows = tonight.hours.map(hour => {
+    const cloudScore = scoreCloudCover(hour.cloudCover);
+    const transScore = scoreTransparency(hour.transparency);
+    const seeingScore = scoreSeeing(hour.seeing);
+    const humidityScore = scoreHumidity(hour.humidity);
+
+    const hourTime = hour.localTime.getTime();
+    const inWindow = bestWindowStart && bestWindowEnd && hourTime >= bestWindowStart && hourTime < bestWindowEnd;
+
+    return `
+      <tr class="${inWindow ? 'in-window' : ''}">
+        <td>${formatTime(hour.localTime, tonight.timeZone)}</td>
+        <td>${hour.cloudCover.toFixed(1)}% <span class="score-cell">[${cloudScore}]</span></td>
+        <td>${hour.transparency} <span class="score-cell">[${transScore}]</span></td>
+        <td>${hour.seeing}" <span class="score-cell">[${seeingScore}]</span></td>
+        <td>${Math.round(hour.humidity)}% <span class="score-cell">[${humidityScore}]</span></td>
+        <td><strong>${Math.round(hour.hourScore)}</strong></td>
+        <td class="${hour.isImageable ? 'imageable-yes' : 'imageable-no'}">${hour.isImageable ? '✓' : '✗'}</td>
+      </tr>
+    `;
+  }).join('');
 
   return `
     <!DOCTYPE html>
@@ -190,6 +220,41 @@ function generateForecastHTML(tonight: NightForecast | null, lat: number, lon: n
           font-size: 0.9em;
           margin-top: 30px;
         }
+        .hourly-table {
+          width: 100%;
+          border-collapse: collapse;
+          margin: 15px 0;
+          font-size: 0.9em;
+        }
+        .hourly-table th {
+          background: #333;
+          padding: 10px 8px;
+          text-align: left;
+          font-weight: 600;
+          border-bottom: 2px solid #444;
+        }
+        .hourly-table td {
+          padding: 8px;
+          border-bottom: 1px solid #333;
+        }
+        .hourly-table tr:hover {
+          background: #2a2a2a;
+        }
+        .hourly-table .imageable-yes {
+          color: #4caf50;
+          font-weight: 600;
+        }
+        .hourly-table .imageable-no {
+          color: #ff4444;
+        }
+        .hourly-table .in-window {
+          background: #1a3a1a;
+        }
+        .score-cell {
+          font-family: monospace;
+          color: #999;
+          font-size: 0.85em;
+        }
       </style>
     </head>
     <body>
@@ -235,6 +300,29 @@ function generateForecastHTML(tonight: NightForecast | null, lat: number, lon: n
             <div class="stat-value">${tonight.avgTransparency.toFixed(1)}</div>
           </div>
         </div>
+      </div>
+
+      <div class="section">
+        <h2>📅 Hourly Breakdown</h2>
+        <table class="hourly-table">
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Clouds</th>
+              <th>Trans</th>
+              <th>Seeing</th>
+              <th>Humidity</th>
+              <th>Score</th>
+              <th>OK?</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${hourlyRows}
+          </tbody>
+        </table>
+        <p style="font-size: 0.85em; color: #999; margin-top: 10px;">
+          Scores shown in brackets []. Green background = best imaging window. ✓ = imageable (≤10% clouds, <90% humidity).
+        </p>
       </div>
 
       ${tonight.hasDealBreaker ? `

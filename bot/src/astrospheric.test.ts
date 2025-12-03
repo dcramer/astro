@@ -133,24 +133,24 @@ describe("scoreTransparency - extinction index (lower is better)", () => {
     expect(scoreTransparency(5)).toBe(100);
   });
 
-  it("returns 85 for very good transparency (5-10)", () => {
-    expect(scoreTransparency(7)).toBe(85);
-    expect(scoreTransparency(10)).toBe(85);
+  it("returns 75 for good transparency (5-8)", () => {
+    expect(scoreTransparency(7)).toBe(75);
+    expect(scoreTransparency(8)).toBe(75);
   });
 
-  it("returns 65 for decent transparency (10-15)", () => {
-    expect(scoreTransparency(12)).toBe(65);
-    expect(scoreTransparency(15)).toBe(65);
+  it("returns 35 for poor transparency (8-12)", () => {
+    expect(scoreTransparency(10)).toBe(35);
+    expect(scoreTransparency(12)).toBe(35);
   });
 
-  it("returns 40 for poor transparency (15-20)", () => {
-    expect(scoreTransparency(17)).toBe(40);
-    expect(scoreTransparency(20)).toBe(40);
+  it("returns 15 for bad transparency (12-18)", () => {
+    expect(scoreTransparency(15)).toBe(15);
+    expect(scoreTransparency(18)).toBe(15);
   });
 
-  it("returns 20 for bad transparency (20-25)", () => {
-    expect(scoreTransparency(22)).toBe(20);
-    expect(scoreTransparency(25)).toBe(20);
+  it("returns 5 for very bad transparency (18-25)", () => {
+    expect(scoreTransparency(22)).toBe(5);
+    expect(scoreTransparency(25)).toBe(5);
   });
 
   it("returns 0 for terrible transparency (> 25)", () => {
