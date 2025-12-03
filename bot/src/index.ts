@@ -28,11 +28,12 @@ export interface Env {
   SENTRY_DSN: string;
 }
 
-function formatTime(date: Date): string {
+function formatTime(date: Date, timeZone: string): string {
   return date.toLocaleTimeString("en-US", {
     hour: "numeric",
     minute: "2-digit",
     hour12: true,
+    timeZone,
   });
 }
 
@@ -204,7 +205,7 @@ function generateForecastHTML(tonight: NightForecast | null, lat: number, lon: n
           <h2>🌙 Best Imaging Window</h2>
           <div class="window">
             <p style="font-size: 1.2em; margin: 0;">
-              <strong>${formatTime(tonight.bestWindow.startHour)} - ${formatTime(tonight.bestWindow.endHour)}</strong>
+              <strong>${formatTime(tonight.bestWindow.startHour, tonight.timeZone)} - ${formatTime(tonight.bestWindow.endHour, tonight.timeZone)}</strong>
             </p>
             <p style="margin: 5px 0 0 0; color: #999;">
               ${tonight.bestWindow.length} consecutive hours · Quality: ${tonight.bestWindow.avgQuality}%
@@ -274,7 +275,7 @@ async function checkWeatherAndNotify(env: Env): Promise<string> {
   // Parse hourly forecasts and get tonight's hours
   const hourlyForecasts = parseHourlyForecasts(response);
   const tonightHours = getTonightHours(hourlyForecasts, lat, lon);
-  const tonight = analyzeNight(tonightHours);
+  const tonight = analyzeNight(tonightHours, response.TimeZone);
 
   if (!tonight) {
     logger.warn("No forecast data available for tonight");
@@ -388,7 +389,7 @@ app.get("/forecast", async (c) => {
 
     const hourlyForecasts = parseHourlyForecasts(response);
     const tonightHours = getTonightHours(hourlyForecasts, lat, lon);
-    const tonight = analyzeNight(tonightHours);
+    const tonight = analyzeNight(tonightHours, response.TimeZone);
 
     logger.info("Forecast preview completed", {
       score: tonight?.score,
@@ -420,7 +421,7 @@ const htmlViewHandler = async (c: any) => {
 
     const hourlyForecasts = parseHourlyForecasts(response);
     const tonightHours = getTonightHours(hourlyForecasts, lat, lon);
-    const tonight = analyzeNight(tonightHours);
+    const tonight = analyzeNight(tonightHours, response.TimeZone);
 
     const html = generateForecastHTML(tonight, lat, lon);
 

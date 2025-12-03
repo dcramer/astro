@@ -267,8 +267,10 @@ describe("isHourImageable", () => {
 // =============================================================================
 
 describe("analyzeNight", () => {
+  const testTimeZone = "America/Los_Angeles";
+
   it("returns null for empty hours", () => {
-    expect(analyzeNight([])).toBeNull();
+    expect(analyzeNight([], testTimeZone)).toBeNull();
   });
 
   it("finds consecutive imageable windows", () => {
@@ -282,7 +284,7 @@ describe("analyzeNight", () => {
       createHour({ hourOffset: 6, cloudCover: 6 }),   // imageable
     ];
 
-    const result = analyzeNight(hours);
+    const result = analyzeNight(hours, testTimeZone);
     expect(result).not.toBeNull();
     expect(result!.bestWindow).not.toBeNull();
     expect(result!.bestWindow!.length).toBe(3); // First window of 3 consecutive (0-2)
@@ -297,7 +299,7 @@ describe("analyzeNight", () => {
       createHour({ hourOffset: 4, cloudCover: 80 }),  // NOT
     ];
 
-    const result = analyzeNight(hours);
+    const result = analyzeNight(hours, testTimeZone);
     expect(result!.bestWindow).toBeNull();
     expect(result!.shouldNotify).toBe(false);
   });
@@ -313,7 +315,7 @@ describe("analyzeNight", () => {
       })
     );
 
-    const result = analyzeNight(hours);
+    const result = analyzeNight(hours, testTimeZone);
     expect(result!.bestWindow!.length).toBe(8);
     expect(result!.shouldNotify).toBe(true);
     expect(result!.score).toBeGreaterThanOrEqual(70);
@@ -329,7 +331,7 @@ describe("analyzeNight", () => {
       })
     );
 
-    const result = analyzeNight(hours);
+    const result = analyzeNight(hours, testTimeZone);
     expect(result!.bestWindow!.length).toBe(5);
     expect(result!.shouldNotify).toBe(false);
     expect(result!.reason).toContain("Only 5 consecutive hours");
@@ -346,7 +348,7 @@ describe("analyzeNight", () => {
       })
     );
 
-    const result = analyzeNight(hours);
+    const result = analyzeNight(hours, testTimeZone);
     expect(result!.hasDealBreaker).toBe(true);
     expect(result!.dealBreakerReason).toContain("Rain likely");
     expect(result!.shouldNotify).toBe(false);
@@ -450,6 +452,8 @@ describe("parseHourlyForecasts", () => {
 // =============================================================================
 
 describe("real-world scenarios", () => {
+  const testTimeZone = "America/Los_Angeles";
+
   it("handles a typical good night in SF", () => {
     // Excellent clear skies for narrowband imaging
     const hours = Array.from({ length: 8 }, (_, i) =>
@@ -463,7 +467,7 @@ describe("real-world scenarios", () => {
       })
     );
 
-    const result = analyzeNight(hours);
+    const result = analyzeNight(hours, testTimeZone);
     expect(result!.shouldNotify).toBe(true);
     expect(result!.score).toBeGreaterThanOrEqual(70);
   });
@@ -480,7 +484,7 @@ describe("real-world scenarios", () => {
       })
     );
 
-    const result = analyzeNight(hours);
+    const result = analyzeNight(hours, testTimeZone);
     expect(result!.shouldNotify).toBe(false);
     expect(result!.bestWindow).toBeNull(); // No imageable hours
   });
@@ -498,7 +502,7 @@ describe("real-world scenarios", () => {
       createHour({ hourOffset: 7, cloudCover: 10 }),  // imageable
     ];
 
-    const result = analyzeNight(hours);
+    const result = analyzeNight(hours, testTimeZone);
     expect(result!.bestWindow!.length).toBe(3);  // Hours 5-7 only (10% each)
     expect(result!.shouldNotify).toBe(false);   // Only 3 hours, need 6
   });

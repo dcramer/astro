@@ -275,9 +275,9 @@ export interface NightForecast {
   maxHumidity: number;
   /** Best consecutive imaging window, or null if none found */
   bestWindow: ImagingWindow | null;
-  /** Final score (0-100). Requires 60+ to notify. */
+  /** Final score (0-100). Requires 70+ to notify. */
   score: number;
-  /** Whether to send a notification (needs 6+ hours AND score >= 60) */
+  /** Whether to send a notification (needs 6+ hours AND score >= 70) */
   shouldNotify: boolean;
   /** Human-readable explanation of the decision */
   reason: string;
@@ -285,6 +285,8 @@ export interface NightForecast {
   hasDealBreaker: boolean;
   /** Explanation of deal-breaker if present */
   dealBreakerReason: string;
+  /** IANA timezone identifier (e.g., "America/Los_Angeles") */
+  timeZone: string;
 }
 
 // =============================================================================
@@ -645,7 +647,7 @@ export function getTonightHours(hours: HourlyForecast[], lat: number, lon: numbe
 /**
  * Analyze a night and return full forecast with scoring.
  */
-export function analyzeNight(hours: HourlyForecast[]): NightForecast | null {
+export function analyzeNight(hours: HourlyForecast[], timeZone: string): NightForecast | null {
   if (hours.length === 0) return null;
 
   // Check for deal breakers first
@@ -677,6 +679,7 @@ export function analyzeNight(hours: HourlyForecast[]): NightForecast | null {
     reason,
     hasDealBreaker: dealBreaker.failed,
     dealBreakerReason: dealBreaker.reason,
+    timeZone,
   };
 }
 
@@ -702,11 +705,12 @@ function escapeMarkdownV2(text: string): string {
   return text.replace(/[_*[\]()~`>#+\-=|{}.!]/g, "\\$&");
 }
 
-function formatTime(date: Date): string {
+function formatTime(date: Date, timeZone: string): string {
   return date.toLocaleTimeString("en-US", {
     hour: "numeric",
     minute: "2-digit",
     hour12: true,
+    timeZone,
   });
 }
 
@@ -716,7 +720,7 @@ export function formatNightSummary(night: NightForecast): string {
   if (night.bestWindow) {
     const w = night.bestWindow;
     lines.push(
-      `*Clear ${escapeMarkdownV2(formatTime(w.startHour))} \\- ${escapeMarkdownV2(formatTime(w.endHour))}* \\(${w.length} hours\\)`
+      `*Clear ${escapeMarkdownV2(formatTime(w.startHour, night.timeZone))} \\- ${escapeMarkdownV2(formatTime(w.endHour, night.timeZone))}* \\(${w.length} hours\\)`
     );
   }
 
