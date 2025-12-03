@@ -293,14 +293,17 @@ export interface NightForecast {
 
 /**
  * Score cloud cover (0-100, inverted - lower clouds = higher score).
- * Non-linear - heavily penalizes high cloud cover.
+ * VERY strict for automated narrowband - even 20% cloud cover ruins imaging.
+ * Heavily penalizes anything above 10%.
  */
 export function scoreCloudCover(cloudPercent: number): number {
-  if (cloudPercent >= 70) return 0;      // Unusable
-  if (cloudPercent >= 50) return 30;     // Poor
-  if (cloudPercent >= 30) return 60;     // Fair
-  if (cloudPercent >= 15) return 80;     // Good
-  return 100 - cloudPercent;             // Excellent
+  if (cloudPercent >= 50) return 0;      // Totally unusable
+  if (cloudPercent >= 30) return 10;     // Terrible
+  if (cloudPercent >= 20) return 25;     // Very poor (user's "ruins things" threshold)
+  if (cloudPercent >= 15) return 40;     // Poor
+  if (cloudPercent >= 10) return 70;     // Marginal (acceptable minimum)
+  if (cloudPercent >= 5) return 90;      // Good
+  return 100 - cloudPercent;             // Excellent (0-5%)
 }
 
 /**
@@ -320,13 +323,17 @@ export function scoreTransparency(rawValue: number): number {
 
 /**
  * Score humidity (0-100, inverted - lower humidity = higher score).
- * Less critical for urban DSO - mainly affects dew formation.
+ * More conservative for automated imaging - dew = session killer.
+ * Granular thresholds in 70-95% range where dew risk varies significantly.
  */
 export function scoreHumidity(humidity: number): number {
-  if (humidity >= 98) return 0;     // Dew certain
-  if (humidity >= 90) return 50;    // High risk
-  if (humidity >= 80) return 70;    // Moderate
-  return 100 - humidity * 0.3;      // Good (less aggressive penalty)
+  if (humidity >= 95) return 0;      // Dew certain
+  if (humidity >= 90) return 20;     // Very high risk
+  if (humidity >= 85) return 40;     // High risk
+  if (humidity >= 80) return 60;     // Moderate risk
+  if (humidity >= 75) return 75;     // Low-moderate risk
+  if (humidity >= 70) return 85;     // Low risk
+  return 100 - humidity * 0.2;       // Good (more aggressive than before)
 }
 
 /**
@@ -347,11 +354,11 @@ export function scoreSeeing(arcsec: number): number {
 
 /**
  * Score an hour using weighted multi-factor formula.
- * Weights optimized for urban DSO imaging:
- * - Clouds 50% (primary factor - blocks all photons)
- * - Seeing 30% (important for star shapes and overall quality)
- * - Transparency 15% (affects light pollution scatter)
- * - Humidity 5% (mostly just dew risk)
+ * Weights optimized for automated narrowband DSO imaging in San Francisco:
+ * - Clouds 65% (absolute blocking factor - highest priority)
+ * - Transparency 20% (critical for light pollution penetration)
+ * - Humidity 10% (dew = session killer for automated rigs)
+ * - Seeing 5% (minimal importance for narrowband with long exposures)
  */
 export function scoreHour(hour: HourlyForecast): number {
   const cloudScore = scoreCloudCover(hour.cloudCover);
@@ -359,19 +366,20 @@ export function scoreHour(hour: HourlyForecast): number {
   const humidityScore = scoreHumidity(hour.humidity);
   const seeingScore = scoreSeeing(hour.seeing);
 
-  return cloudScore * 0.50 +
-         seeingScore * 0.30 +
-         transparencyScore * 0.15 +
-         humidityScore * 0.05;
+  return cloudScore * 0.65 +
+         seeingScore * 0.05 +
+         transparencyScore * 0.20 +
+         humidityScore * 0.10;
 }
 
 /**
  * Check if an hour meets minimum thresholds for imaging.
- * Uses 40% cloud threshold (urban DSO can tolerate thin clouds).
- * Humidity is less critical - only reject extreme saturation.
+ * VERY strict thresholds for automated narrowband imaging.
+ * - Cloud cover ≤10%: Even 20% ruins narrowband imaging
+ * - Humidity <90%: Conservative dew safety for automated rigs
  */
 export function isHourImageable(hour: HourlyForecast): boolean {
-  return hour.cloudCover <= 40 && hour.humidity < 98;
+  return hour.cloudCover <= 10 && hour.humidity < 90;
 }
 
 // =============================================================================
@@ -388,19 +396,23 @@ function getDewPointDepression(hour: HourlyForecast): number {
 
 /**
  * Check if rain is likely for a given hour.
+ * More conservative detection for automated equipment safety.
  * Uses cloud cover + dew point depression + humidity.
  */
 function isRainLikely(hour: HourlyForecast): boolean {
   const dewPointDepression = getDewPointDepression(hour);
 
-  // 100% clouds = definite rain
-  if (hour.cloudCover >= 100) return true;
+  // Near-certain rain
+  if (hour.cloudCover >= 95) return true;
 
   // High clouds + near-saturation = rain
-  if (hour.cloudCover >= 80 && dewPointDepression < 3) return true;
+  if (hour.cloudCover >= 75 && dewPointDepression < 3) return true;
 
-  // Very high clouds + high humidity = rain/drizzle
-  if (hour.cloudCover >= 70 && hour.humidity > 95) return true;
+  // High clouds + very high humidity = rain/drizzle
+  if (hour.cloudCover >= 60 && hour.humidity > 95) return true;
+
+  // Moderate clouds + very near saturation = likely rain
+  if (hour.cloudCover >= 50 && dewPointDepression < 1.5) return true;
 
   return false;
 }
@@ -486,7 +498,8 @@ function findBestWindow(hours: HourlyForecast[]): ImagingWindow | null {
 
 /**
  * Calculate final score and notification decision.
- * Requires 6+ consecutive hours AND score >= 60 to notify.
+ * Requires 6+ consecutive hours AND score >= 70 to notify.
+ * Conservative threshold to eliminate false positives.
  */
 function calculateFinalScore(
   bestWindow: ImagingWindow | null,
@@ -508,8 +521,8 @@ function calculateFinalScore(
   // Final score: 60% length, 40% quality
   const finalScore = Math.round(lengthScore * 0.60 + avgQuality * 0.40);
 
-  // Decision: need 6+ hours AND score >= 60
-  const shouldNotify = length >= 6 && finalScore >= 60;
+  // Decision: need 6+ hours AND score >= 70 (conservative for narrowband)
+  const shouldNotify = length >= 6 && finalScore >= 70;
 
   let reason: string;
   if (shouldNotify) {

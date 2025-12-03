@@ -45,35 +45,47 @@ function createHour(overrides: Partial<HourlyForecast> = {}): HourlyForecast {
 // =============================================================================
 
 describe("scoreCloudCover", () => {
-  it("returns 0 for unusable conditions (>= 70%)", () => {
+  it("returns 0 for unusable conditions (>= 50%)", () => {
+    expect(scoreCloudCover(50)).toBe(0);
     expect(scoreCloudCover(70)).toBe(0);
-    expect(scoreCloudCover(80)).toBe(0);
     expect(scoreCloudCover(100)).toBe(0);
   });
 
-  it("returns 30 for poor conditions (50-69%)", () => {
-    expect(scoreCloudCover(50)).toBe(30);
-    expect(scoreCloudCover(60)).toBe(30);
-    expect(scoreCloudCover(69)).toBe(30);
+  it("returns 10 for terrible conditions (30-49%)", () => {
+    expect(scoreCloudCover(30)).toBe(10);
+    expect(scoreCloudCover(40)).toBe(10);
+    expect(scoreCloudCover(49)).toBe(10);
   });
 
-  it("returns 60 for fair conditions (30-49%)", () => {
-    expect(scoreCloudCover(30)).toBe(60);
-    expect(scoreCloudCover(40)).toBe(60);
-    expect(scoreCloudCover(49)).toBe(60);
+  it("returns 25 for very poor conditions (20-29%)", () => {
+    expect(scoreCloudCover(20)).toBe(25);
+    expect(scoreCloudCover(25)).toBe(25);
+    expect(scoreCloudCover(29)).toBe(25);
   });
 
-  it("returns 80 for good conditions (15-29%)", () => {
-    expect(scoreCloudCover(15)).toBe(80);
-    expect(scoreCloudCover(20)).toBe(80);
-    expect(scoreCloudCover(29)).toBe(80);
+  it("returns 40 for poor conditions (15-19%)", () => {
+    expect(scoreCloudCover(15)).toBe(40);
+    expect(scoreCloudCover(17)).toBe(40);
+    expect(scoreCloudCover(19)).toBe(40);
   });
 
-  it("returns excellent scores for clear skies (< 15%)", () => {
+  it("returns 70 for marginal conditions (10-14%)", () => {
+    expect(scoreCloudCover(10)).toBe(70);
+    expect(scoreCloudCover(12)).toBe(70);
+    expect(scoreCloudCover(14)).toBe(70);
+  });
+
+  it("returns 90 for good conditions (5-9%)", () => {
+    expect(scoreCloudCover(5)).toBe(90);
+    expect(scoreCloudCover(7)).toBe(90);
+    expect(scoreCloudCover(9)).toBe(90);
+  });
+
+  it("returns excellent scores for clear skies (< 5%)", () => {
     expect(scoreCloudCover(0)).toBe(100);
-    expect(scoreCloudCover(5)).toBe(95);
-    expect(scoreCloudCover(10)).toBe(90);
-    expect(scoreCloudCover(14)).toBe(86);
+    expect(scoreCloudCover(1)).toBe(99);
+    expect(scoreCloudCover(3)).toBe(97);
+    expect(scoreCloudCover(4)).toBe(96);
   });
 });
 
@@ -148,25 +160,46 @@ describe("scoreTransparency - extinction index (lower is better)", () => {
 });
 
 describe("scoreHumidity", () => {
-  it("returns 0 for certain dew (>= 98%)", () => {
+  it("returns 0 for certain dew (>= 95%)", () => {
+    expect(scoreHumidity(95)).toBe(0);
     expect(scoreHumidity(98)).toBe(0);
     expect(scoreHumidity(100)).toBe(0);
   });
 
-  it("returns 50 for high dew risk (90-97%)", () => {
-    expect(scoreHumidity(90)).toBe(50);
-    expect(scoreHumidity(95)).toBe(50);
+  it("returns 20 for very high dew risk (90-94%)", () => {
+    expect(scoreHumidity(90)).toBe(20);
+    expect(scoreHumidity(92)).toBe(20);
+    expect(scoreHumidity(94)).toBe(20);
   });
 
-  it("returns 70 for moderate humidity (80-89%)", () => {
-    expect(scoreHumidity(80)).toBe(70);
-    expect(scoreHumidity(85)).toBe(70);
+  it("returns 40 for high dew risk (85-89%)", () => {
+    expect(scoreHumidity(85)).toBe(40);
+    expect(scoreHumidity(87)).toBe(40);
+    expect(scoreHumidity(89)).toBe(40);
   });
 
-  it("returns good scores for low humidity (< 80%)", () => {
-    expect(scoreHumidity(70)).toBe(79); // 100 - 70*0.3 = 79
-    expect(scoreHumidity(50)).toBe(85); // 100 - 50*0.3 = 85
-    expect(scoreHumidity(0)).toBe(100); // 100 - 0*0.3 = 100
+  it("returns 60 for moderate humidity (80-84%)", () => {
+    expect(scoreHumidity(80)).toBe(60);
+    expect(scoreHumidity(82)).toBe(60);
+    expect(scoreHumidity(84)).toBe(60);
+  });
+
+  it("returns 75 for low-moderate humidity (75-79%)", () => {
+    expect(scoreHumidity(75)).toBe(75);
+    expect(scoreHumidity(77)).toBe(75);
+    expect(scoreHumidity(79)).toBe(75);
+  });
+
+  it("returns 85 for low humidity (70-74%)", () => {
+    expect(scoreHumidity(70)).toBe(85);
+    expect(scoreHumidity(72)).toBe(85);
+    expect(scoreHumidity(74)).toBe(85);
+  });
+
+  it("returns good scores for very low humidity (< 70%)", () => {
+    expect(scoreHumidity(60)).toBe(88); // 100 - 60*0.2 = 88
+    expect(scoreHumidity(50)).toBe(90); // 100 - 50*0.2 = 90
+    expect(scoreHumidity(0)).toBe(100); // 100 - 0*0.2 = 100
   });
 });
 
@@ -177,10 +210,10 @@ describe("scoreHumidity", () => {
 describe("scoreHour", () => {
   it("calculates weighted score correctly", () => {
     const hour = createHour({
-      cloudCover: 0,    // 100 score * 0.50 = 50
-      seeing: 1,        // 100 score * 0.30 = 30
-      transparency: 0,  // 100 score * 0.15 = 15
-      humidity: 0,      // 100 score * 0.05 = 5
+      cloudCover: 0,    // 100 score * 0.65 = 65
+      seeing: 1,        // 100 score * 0.05 = 5
+      transparency: 0,  // 100 score * 0.20 = 20
+      humidity: 0,      // 100 score * 0.10 = 10
     });
     expect(scoreHour(hour)).toBe(100);
   });
@@ -193,33 +226,38 @@ describe("scoreHour", () => {
     expect(scoreHour(cloudyHour)).toBeLessThan(50); // Cloud score = 0
   });
 
-  it("penalizes poor seeing significantly", () => {
+  it("penalizes poor seeing minimally for narrowband", () => {
     const goodSeeing = createHour({ seeing: 1.5 });
     const poorSeeing = createHour({ seeing: 4 });
 
     const diff = scoreHour(goodSeeing) - scoreHour(poorSeeing);
-    expect(diff).toBeGreaterThan(20); // 30% weight on seeing
+    expect(diff).toBeLessThan(10); // Only 5% weight on seeing for narrowband
   });
 });
 
 describe("isHourImageable", () => {
-  it("returns true for good conditions", () => {
-    const hour = createHour({ cloudCover: 20, humidity: 70 });
+  it("returns true for excellent conditions", () => {
+    const hour = createHour({ cloudCover: 5, humidity: 70 });
     expect(isHourImageable(hour)).toBe(true);
   });
 
-  it("returns false when cloud cover exceeds 40%", () => {
-    const hour = createHour({ cloudCover: 50, humidity: 70 });
+  it("returns true at cloud cover threshold (10%)", () => {
+    const hour = createHour({ cloudCover: 10, humidity: 70 });
+    expect(isHourImageable(hour)).toBe(true);
+  });
+
+  it("returns false when cloud cover exceeds 10%", () => {
+    const hour = createHour({ cloudCover: 15, humidity: 70 });
     expect(isHourImageable(hour)).toBe(false);
   });
 
-  it("returns false when humidity is 98% or higher", () => {
-    const hour = createHour({ cloudCover: 20, humidity: 98 });
+  it("returns false when humidity is 90% or higher", () => {
+    const hour = createHour({ cloudCover: 5, humidity: 90 });
     expect(isHourImageable(hour)).toBe(false);
   });
 
-  it("returns true at cloud cover threshold (40%)", () => {
-    const hour = createHour({ cloudCover: 40, humidity: 70 });
+  it("returns true just below humidity threshold (89%)", () => {
+    const hour = createHour({ cloudCover: 10, humidity: 89 });
     expect(isHourImageable(hour)).toBe(true);
   });
 });
@@ -235,18 +273,19 @@ describe("analyzeNight", () => {
 
   it("finds consecutive imageable windows", () => {
     const hours = [
-      createHour({ hourOffset: 0, cloudCover: 10 }),  // imageable
-      createHour({ hourOffset: 1, cloudCover: 15 }),  // imageable
-      createHour({ hourOffset: 2, cloudCover: 20 }),  // imageable
+      createHour({ hourOffset: 0, cloudCover: 5 }),   // imageable
+      createHour({ hourOffset: 1, cloudCover: 8 }),   // imageable
+      createHour({ hourOffset: 2, cloudCover: 10 }),  // imageable
       createHour({ hourOffset: 3, cloudCover: 80 }),  // NOT imageable
-      createHour({ hourOffset: 4, cloudCover: 10 }),  // imageable
-      createHour({ hourOffset: 5, cloudCover: 10 }),  // imageable
+      createHour({ hourOffset: 4, cloudCover: 7 }),   // imageable
+      createHour({ hourOffset: 5, cloudCover: 9 }),   // imageable
+      createHour({ hourOffset: 6, cloudCover: 6 }),   // imageable
     ];
 
     const result = analyzeNight(hours);
     expect(result).not.toBeNull();
     expect(result!.bestWindow).not.toBeNull();
-    expect(result!.bestWindow!.length).toBe(3); // First window of 3 consecutive
+    expect(result!.bestWindow!.length).toBe(3); // First window of 3 consecutive (0-2)
   });
 
   it("requires minimum 3 consecutive hours for a window", () => {
@@ -263,20 +302,21 @@ describe("analyzeNight", () => {
     expect(result!.shouldNotify).toBe(false);
   });
 
-  it("triggers notification for 6+ good hours", () => {
+  it("triggers notification for 6+ good hours with score >= 70", () => {
     const hours = Array.from({ length: 8 }, (_, i) =>
       createHour({
         hourOffset: i,
-        cloudCover: 10,
+        cloudCover: 5,   // Excellent clouds for high score
         seeing: 2,
         transparency: 5,
+        humidity: 60,    // Low humidity for high score
       })
     );
 
     const result = analyzeNight(hours);
     expect(result!.bestWindow!.length).toBe(8);
     expect(result!.shouldNotify).toBe(true);
-    expect(result!.score).toBeGreaterThanOrEqual(60);
+    expect(result!.score).toBeGreaterThanOrEqual(70);
   });
 
   it("does not notify for only 5 consecutive hours", () => {
@@ -390,8 +430,8 @@ describe("parseHourlyForecasts", () => {
 
   it("calculates isImageable for each hour", () => {
     const hours = parseHourlyForecasts(minimalResponse);
-    expect(hours[0].isImageable).toBe(true); // 10% clouds
-    expect(hours[1].isImageable).toBe(true); // 20% clouds
+    expect(hours[0].isImageable).toBe(true);  // 10% clouds - at threshold
+    expect(hours[1].isImageable).toBe(false); // 20% clouds - exceeds 10% threshold
   });
 
   it("throws when no cloud cover data available", () => {
@@ -411,21 +451,21 @@ describe("parseHourlyForecasts", () => {
 
 describe("real-world scenarios", () => {
   it("handles a typical good night in SF", () => {
-    // Clear skies, decent seeing, good transparency
+    // Excellent clear skies for narrowband imaging
     const hours = Array.from({ length: 8 }, (_, i) =>
       createHour({
         hourOffset: i,
         localTime: new Date(`2024-01-15T${22 + i}:00:00`),
-        cloudCover: 8 + i * 2,  // 8-22%
-        seeing: 2.2,            // Decent seeing
-        transparency: 8,        // Good transparency
-        humidity: 70,
+        cloudCover: 3 + i * 0.5,  // 3-6.5% - very clear
+        seeing: 2.2,              // Decent seeing
+        transparency: 8,          // Good transparency
+        humidity: 65,             // Low humidity
       })
     );
 
     const result = analyzeNight(hours);
     expect(result!.shouldNotify).toBe(true);
-    expect(result!.score).toBeGreaterThanOrEqual(60);
+    expect(result!.score).toBeGreaterThanOrEqual(70);
   });
 
   it("handles a typical bad night with marine layer", () => {
@@ -446,20 +486,20 @@ describe("real-world scenarios", () => {
   });
 
   it("handles partial clearing", () => {
-    // Clouds early, clearing later
+    // Clouds early, clearing later (strict 10% threshold)
     const hours = [
       createHour({ hourOffset: 0, cloudCover: 80 }),
       createHour({ hourOffset: 1, cloudCover: 70 }),
       createHour({ hourOffset: 2, cloudCover: 50 }),
-      createHour({ hourOffset: 3, cloudCover: 30 }),
-      createHour({ hourOffset: 4, cloudCover: 15 }),
-      createHour({ hourOffset: 5, cloudCover: 10 }),
-      createHour({ hourOffset: 6, cloudCover: 10 }),
-      createHour({ hourOffset: 7, cloudCover: 10 }),
+      createHour({ hourOffset: 3, cloudCover: 30 }),  // NOT imageable (>10%)
+      createHour({ hourOffset: 4, cloudCover: 15 }),  // NOT imageable (>10%)
+      createHour({ hourOffset: 5, cloudCover: 10 }),  // imageable
+      createHour({ hourOffset: 6, cloudCover: 10 }),  // imageable
+      createHour({ hourOffset: 7, cloudCover: 10 }),  // imageable
     ];
 
     const result = analyzeNight(hours);
-    expect(result!.bestWindow!.length).toBe(5); // Hours 3-7 (30%, 15%, 10%, 10%, 10%)
-    expect(result!.shouldNotify).toBe(false);   // Only 5 hours, need 6
+    expect(result!.bestWindow!.length).toBe(3);  // Hours 5-7 only (10% each)
+    expect(result!.shouldNotify).toBe(false);   // Only 3 hours, need 6
   });
 });
