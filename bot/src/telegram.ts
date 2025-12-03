@@ -1,3 +1,5 @@
+import { logger } from "./logger";
+
 const TELEGRAM_API = "https://api.telegram.org";
 
 export interface TelegramResponse {
@@ -12,6 +14,12 @@ export async function sendMessage(
   text: string,
   parseMode: "MarkdownV2" | "HTML" = "MarkdownV2"
 ): Promise<TelegramResponse> {
+  logger.info("Sending Telegram message", {
+    chatId,
+    messageLength: text.length,
+    parseMode,
+  });
+
   const response = await fetch(
     `${TELEGRAM_API}/bot${botToken}/sendMessage`,
     {
@@ -28,7 +36,19 @@ export async function sendMessage(
     }
   );
 
-  return response.json();
+  const result = (await response.json()) as TelegramResponse;
+
+  if (result.ok) {
+    logger.info("Telegram message sent successfully", { chatId });
+  } else {
+    logger.error("Telegram message send failed", {
+      chatId,
+      description: result.description,
+      status: response.status,
+    });
+  }
+
+  return result;
 }
 
 export async function sendPhoto(
@@ -37,6 +57,12 @@ export async function sendPhoto(
   photoUrl: string,
   caption?: string
 ): Promise<TelegramResponse> {
+  logger.info("Sending Telegram photo", {
+    chatId,
+    photoUrl,
+    hasCaption: !!caption,
+  });
+
   const response = await fetch(
     `${TELEGRAM_API}/bot${botToken}/sendPhoto`,
     {
@@ -52,7 +78,20 @@ export async function sendPhoto(
     }
   );
 
-  return response.json();
+  const result = (await response.json()) as TelegramResponse;
+
+  if (result.ok) {
+    logger.info("Telegram photo sent successfully", { chatId });
+  } else {
+    logger.error("Telegram photo send failed", {
+      chatId,
+      photoUrl,
+      description: result.description,
+      status: response.status,
+    });
+  }
+
+  return result;
 }
 
 export function getClearOutsideImageUrl(lat: number, lon: number): string {

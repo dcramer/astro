@@ -19,6 +19,7 @@
 
 import { z } from "zod";
 import SunCalc from "suncalc";
+import { logger } from "./logger";
 
 const API_BASE = "https://astrosphericpublicaccess.azurewebsites.net/api";
 
@@ -147,9 +148,19 @@ export async function getForecast(
   // Check KV cache first
   const cached = await cache.get(cacheKey, "json");
   if (cached) {
-    console.log("Using cached Astrospheric data from KV");
+    logger.info("Cache hit: using cached Astrospheric data", {
+      cacheKey,
+      lat,
+      lon,
+    });
     return AstrosphericForecastResponseSchema.parse(cached);
   }
+
+  logger.info("Cache miss: fetching fresh Astrospheric data", {
+    cacheKey,
+    lat,
+    lon,
+  });
 
   const request: AstrosphericForecastRequest = {
     APIKey: apiKey,
@@ -166,17 +177,37 @@ export async function getForecast(
   });
 
   if (!response.ok) {
+    logger.error("Astrospheric API request failed", {
+      status: response.status,
+      statusText: response.statusText,
+      lat,
+      lon,
+    });
     throw new Error(`Astrospheric API error: ${response.status}`);
   }
 
+  logger.info("Successfully fetched Astrospheric data", {
+    status: response.status,
+    lat,
+    lon,
+  });
+
   const data = await response.json();
   const parsed = AstrosphericForecastResponseSchema.parse(data);
+
+  logger.info("Parsed and validated Astrospheric response", {
+    apiCreditsUsed: parsed.APICreditUsedToday,
+    forecastHours: parsed.RDPS_CloudCover?.length ?? parsed.NAM_CloudCover?.length ?? parsed.GFS_CloudCover?.length ?? 0,
+  });
 
   // Store in KV with TTL
   await cache.put(cacheKey, JSON.stringify(parsed), {
     expirationTtl: CACHE_TTL_SECONDS,
   });
-  console.log("Cached fresh Astrospheric data to KV");
+  logger.info("Cached fresh Astrospheric data", {
+    cacheKey,
+    ttlSeconds: CACHE_TTL_SECONDS,
+  });
 
   return parsed;
 }
