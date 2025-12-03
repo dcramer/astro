@@ -27,8 +27,8 @@ crons = ["0 14 * * *"]
 # Observability drains to Sentry
 [observability.traces]
 enabled = true
-destinations = ["sentry-traces"]
+destinations = ["astro-bot-traces"]
 
 [observability.logs]
 enabled = true
-destinations = ["sentry-logs"]
+destinations = ["astro-bot-logs"]
