@@ -94,10 +94,10 @@ function generateForecastHTML(tonight: NightForecast | null, lat: number, lon: n
   const bestWindowEnd = tonight.bestWindow?.endHour.getTime();
 
   const hourlyRows = tonight.hours.map(hour => {
-    const cloudScore = scoreCloudCover(hour.cloudCover);
-    const transScore = scoreTransparency(hour.transparency);
-    const seeingScore = scoreSeeing(hour.seeing);
-    const humidityScore = scoreHumidity(hour.humidity);
+    const cloudScore = Math.round(scoreCloudCover(hour.cloudCover));
+    const transScore = Math.round(scoreTransparency(hour.transparency));
+    const seeingScore = Math.round(scoreSeeing(hour.seeing));
+    const humidityScore = Math.round(scoreHumidity(hour.humidity));
 
     const hourTime = hour.localTime.getTime();
     const inWindow = bestWindowStart && bestWindowEnd && hourTime >= bestWindowStart && hourTime < bestWindowEnd;
@@ -265,20 +265,6 @@ function generateForecastHTML(tonight: NightForecast | null, lat: number, lon: n
         <p><strong>Score: ${tonight.score}/100</strong></p>
       </div>
 
-      ${tonight.bestWindow ? `
-        <div class="section">
-          <h2>🌙 Best Imaging Window</h2>
-          <div class="window">
-            <p style="font-size: 1.2em; margin: 0;">
-              <strong>${formatTime(tonight.bestWindow.startHour, tonight.timeZone)} - ${formatTime(tonight.bestWindow.endHour, tonight.timeZone)}</strong>
-            </p>
-            <p style="margin: 5px 0 0 0; color: #999;">
-              ${tonight.bestWindow.length} consecutive hours · Quality: ${tonight.bestWindow.avgQuality}%
-            </p>
-          </div>
-        </div>
-      ` : ''}
-
       <div class="section">
         <h2>📊 Tonight's Conditions</h2>
         <div class="stats">
@@ -321,7 +307,7 @@ function generateForecastHTML(tonight: NightForecast | null, lat: number, lon: n
           </tbody>
         </table>
         <p style="font-size: 0.85em; color: #999; margin-top: 10px;">
-          Scores shown in brackets []. Green background = best imaging window. ✓ = imageable (≤10% clouds, <90% humidity).
+          Scores shown in brackets []. Green background = longest consecutive window. ✓ = imageable (≤10% clouds, <90% humidity).
         </p>
       </div>
 
@@ -330,11 +316,6 @@ function generateForecastHTML(tonight: NightForecast | null, lat: number, lon: n
           <strong>⚠️ Warning:</strong> ${tonight.dealBreakerReason}
         </div>
       ` : ''}
-
-      <div class="section">
-        <h2>💡 Decision</h2>
-        <p>${tonight.reason}</p>
-      </div>
 
       <div class="links">
         <a href="${astrosphericUrl}" target="_blank">View on Astrospheric</a>
