@@ -16,16 +16,22 @@ function coerceNumber(value: unknown): number | null {
   return null;
 }
 
+// Helper to access extended properties that may exist on raw sequence items
+function getItemProperty(item: NinaSequenceItem, ...keys: string[]): unknown {
+  const raw = item as NinaSequenceItem & Record<string, unknown>;
+  for (const key of keys) {
+    if (raw[key] !== undefined) return raw[key];
+    if (item.metadata?.[key] !== undefined) return item.metadata[key];
+  }
+  return undefined;
+}
+
 export const sequenceDetailExtractors: Record<string, SequenceDetailExtractor> = {
   "Wait for Time": (item, now) => {
     const parts: string[] = [];
 
     // Check for TargetTime directly on the item (from the JSON structure)
-    const targetTimeValue = (item as any).TargetTime ||
-                           (item as any).targetTime ||
-                           item.metadata?.["TargetTime"] ||
-                           item.metadata?.["WaitUntil"] ||
-                           item.metadata?.["Time"];
+    const targetTimeValue = getItemProperty(item, "TargetTime", "targetTime", "WaitUntil", "Time");
 
     if (targetTimeValue) {
       const targetTime = new Date(String(targetTimeValue));
@@ -49,8 +55,7 @@ export const sequenceDetailExtractors: Record<string, SequenceDetailExtractor> =
     }
 
     // Check for CalculatedWaitDuration directly on the item
-    const calculatedDuration = (item as any).CalculatedWaitDuration ||
-                               (item as any).calculatedWaitDuration;
+    const calculatedDuration = getItemProperty(item, "CalculatedWaitDuration", "calculatedWaitDuration");
     if (!targetTimeValue && calculatedDuration) {
       // Parse duration string like "02:40:25.9083582"
       const durationMatch = String(calculatedDuration).match(/(\d+):(\d+):(\d+)/);
@@ -111,11 +116,7 @@ export const sequenceDetailExtractors: Record<string, SequenceDetailExtractor> =
     const targetAlt = coerceNumber(metadata["Altitude"] || metadata["TargetAltitude"] || metadata["HorizonAltitude"]);
 
     // Check for ExpectedTime directly on the item (from the JSON structure)
-    const expectedTimeValue = (item as any).ExpectedTime ||
-                             (item as any).expectedTime ||
-                             metadata["ExpectedTime"] ||
-                             metadata["WaitUntil"] ||
-                             metadata["Time"];
+    const expectedTimeValue = getItemProperty(item, "ExpectedTime", "expectedTime", "WaitUntil", "Time");
 
     if (expectedTimeValue) {
       let targetTime: Date | null = null;
@@ -165,8 +166,7 @@ export const sequenceDetailExtractors: Record<string, SequenceDetailExtractor> =
     }
 
     // Check for CalculatedWaitDuration directly on the item
-    const calculatedDuration = (item as any).CalculatedWaitDuration ||
-                               (item as any).calculatedWaitDuration;
+    const calculatedDuration = getItemProperty(item, "CalculatedWaitDuration", "calculatedWaitDuration");
     if (calculatedDuration) {
       // Parse duration string like "02:40:25.9083582"
       const durationMatch = String(calculatedDuration).match(/(\d+):(\d+):(\d+)/);

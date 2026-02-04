@@ -1,5 +1,4 @@
-import { z } from "zod";
-import { TelescopiusSearchResponseSchema, type TelescopiusDSO, type TelescopiusSearchResponse } from "./schema";
+import { TelescopiusSearchResponseSchema, type TelescopiusSearchResponse } from "./schema";
 
 export interface TelescopiusTarget {
   name: string;

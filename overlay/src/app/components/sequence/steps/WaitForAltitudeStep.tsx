@@ -22,6 +22,16 @@ function coerceNumber(value: unknown): number | null {
   return null;
 }
 
+// Helper to access extended properties that may exist on raw sequence items
+function getItemProperty(item: NinaSequenceItem, ...keys: string[]): unknown {
+  const raw = item as NinaSequenceItem & Record<string, unknown>;
+  for (const key of keys) {
+    if (raw[key] !== undefined) return raw[key];
+    if (item.metadata?.[key] !== undefined) return item.metadata[key];
+  }
+  return undefined;
+}
+
 export function WaitForAltitudeStep({ item, now: providedNow }: WaitForAltitudeStepProps) {
   const contextNow = useTimeWithFallback();
   const actualNow = providedNow ?? contextNow;
@@ -29,10 +39,7 @@ export function WaitForAltitudeStep({ item, now: providedNow }: WaitForAltitudeS
   const parts: string[] = [];
 
   // Check for ExpectedTime
-  const expectedTimeValue =
-    (item as any).ExpectedTime ||
-    (item as any).expectedTime ||
-    metadata["ExpectedTime"];
+  const expectedTimeValue = getItemProperty(item, "ExpectedTime", "expectedTime");
 
   if (expectedTimeValue) {
     const targetTime = new Date(String(expectedTimeValue));

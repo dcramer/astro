@@ -1,5 +1,4 @@
 import type { AdvancedSequenceSnapshot, NinaSequenceItem } from "@nina/advanced";
-import { formatDuration } from "@nina/format";
 import { sequenceDetailExtractors } from './detail-extractors';
 
 export function pickFriendlySequenceName(path: ReadonlyArray<string> | undefined) {

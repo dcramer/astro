@@ -18,11 +18,7 @@ export function CameraStatValue({ camera, lastExposureDuration }: CameraStatValu
     initialRemaining: number | null;
   }>({ key: null, initialRemaining: null });
 
-  if (!camera) {
-    return <StatValue>—</StatValue>;
-  }
-
-  const cameraRemainingSeconds = getRemainingSeconds(camera, now);
+  const cameraRemainingSeconds = camera ? getRemainingSeconds(camera, now) : null;
 
   // Track initial remaining for progress calculation
   useEffect(() => {
@@ -39,6 +35,10 @@ export function CameraStatValue({ camera, lastExposureDuration }: CameraStatValu
       };
     }
   }, [camera?.isExposing, camera?.exposureEndTime, cameraRemainingSeconds]);
+
+  if (!camera) {
+    return <StatValue>—</StatValue>;
+  }
 
   const cameraProgress = computeExposureProgress(
     camera,
@@ -63,11 +63,7 @@ export function useCameraProgress(
     initialRemaining: number | null;
   }>({ key: null, initialRemaining: null });
 
-  if (!camera) {
-    return null;
-  }
-
-  const cameraRemainingSeconds = getRemainingSeconds(camera, now);
+  const cameraRemainingSeconds = camera ? getRemainingSeconds(camera, now) : null;
 
   // Track initial remaining for progress calculation
   useEffect(() => {
@@ -84,6 +80,10 @@ export function useCameraProgress(
       };
     }
   }, [camera?.isExposing, camera?.exposureEndTime, cameraRemainingSeconds]);
+
+  if (!camera) {
+    return null;
+  }
 
   return computeExposureProgress(
     camera,

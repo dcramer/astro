@@ -209,16 +209,12 @@ export function useTargetEnrichment(
     // Poll every 5 seconds to check for changes
     const interval = setInterval(detectAndEnrichTarget, 5000);
     return () => clearInterval(interval);
-  }, [sequence, mount, enabled]);
+  }, [sequence, mount, enabled, currentTarget]);
 
   // Clean old cache entries periodically
   useEffect(() => {
     const cleanCache = () => {
-      const maxAge = 30 * 60 * 1000; // 30 minutes
-      const now = Date.now();
-
-      // Keep a timestamp for each cache entry (would need to enhance this)
-      // For now, just limit cache size
+      // For now, just limit cache size (timestamps could be added later)
       if (enrichmentCache.current.size > 50) {
         // Remove oldest entries (simple FIFO for now)
         const entries = Array.from(enrichmentCache.current.entries());

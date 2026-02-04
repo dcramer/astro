@@ -1,6 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { TelescopiusClient } from "@telescopius/client";
 
+interface SearchOptions {
+  lat?: number;
+  lon?: number;
+  datetime?: string;
+  minAltitude?: number;
+  types?: string[];
+  catalogs?: string[];
+  magMax?: number;
+  computeCurrent?: boolean;
+}
+
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const ra = searchParams.get("ra");
@@ -28,7 +39,7 @@ export async function GET(request: NextRequest) {
   const radiusDegrees = radius ? parseFloat(radius) / 60 : 0.5;
 
   // Build options object
-  const options: any = {};
+  const options: SearchOptions = {};
   if (lat) options.lat = parseFloat(lat);
   if (lon) options.lon = parseFloat(lon);
   if (datetime) options.datetime = datetime;

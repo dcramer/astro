@@ -9,17 +9,22 @@ interface WaitForTimeStepProps {
   now?: number;
 }
 
+// Helper to access extended properties that may exist on raw sequence items
+function getItemProperty(item: NinaSequenceItem, ...keys: string[]): unknown {
+  const raw = item as NinaSequenceItem & Record<string, unknown>;
+  for (const key of keys) {
+    if (raw[key] !== undefined) return raw[key];
+    if (item.metadata?.[key] !== undefined) return item.metadata[key];
+  }
+  return undefined;
+}
+
 export function WaitForTimeStep({ item, now: providedNow }: WaitForTimeStepProps) {
   const contextNow = useTimeWithFallback();
   const actualNow = providedNow ?? contextNow;
 
   // Check for TargetTime in various places
-  const targetTimeValue =
-    (item as any).TargetTime ||
-    (item as any).targetTime ||
-    item.metadata?.["TargetTime"] ||
-    item.metadata?.["WaitUntil"] ||
-    item.metadata?.["Time"];
+  const targetTimeValue = getItemProperty(item, "TargetTime", "targetTime", "WaitUntil", "Time");
 
   if (targetTimeValue) {
     const targetTime = new Date(String(targetTimeValue));
@@ -34,9 +39,7 @@ export function WaitForTimeStep({ item, now: providedNow }: WaitForTimeStepProps
   }
 
   // Check for CalculatedWaitDuration
-  const calculatedDuration =
-    (item as any).CalculatedWaitDuration ||
-    (item as any).calculatedWaitDuration;
+  const calculatedDuration = getItemProperty(item, "CalculatedWaitDuration", "calculatedWaitDuration");
 
   if (calculatedDuration) {
     const durationMatch = String(calculatedDuration).match(/(\d+):(\d+):(\d+)/);

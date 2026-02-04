@@ -1,5 +1,23 @@
 import type { NinaSequenceItem, AdvancedSequenceSnapshot } from "@nina/advanced";
 
+// Type guard for objects with numeric coordinate properties
+type CoordinateObject = Record<string, unknown>;
+
+function getNumericProp(obj: CoordinateObject | undefined, ...keys: string[]): number | undefined {
+  if (!obj) return undefined;
+  for (const key of keys) {
+    const val = obj[key];
+    if (typeof val === "number") return val;
+  }
+  return undefined;
+}
+
+function getNestedObject(obj: CoordinateObject | undefined, key: string): CoordinateObject | undefined {
+  if (!obj) return undefined;
+  const val = obj[key];
+  return typeof val === "object" && val !== null ? val as CoordinateObject : undefined;
+}
+
 export interface ExtractedTarget {
   name: string;
   ra?: number;  // in degrees
@@ -23,37 +41,37 @@ export function extractTargetWithCoordinates(
     if (!item.metadata) return null;
 
     // Check various possible field names for coordinates
-    const metadata = item.metadata as Record<string, any>;
+    const metadata = item.metadata as CoordinateObject;
 
     // Look for RA/Dec in various formats
     let ra: number | undefined;
     let dec: number | undefined;
 
     // Check for Coordinates field (might be a string or object)
-    if (metadata.Coordinates) {
-      if (typeof metadata.Coordinates === "object") {
-        ra = metadata.Coordinates.RA || metadata.Coordinates.Ra || metadata.Coordinates.ra;
-        dec = metadata.Coordinates.DEC || metadata.Coordinates.Dec || metadata.Coordinates.dec;
-      } else if (typeof metadata.Coordinates === "string") {
-        // Parse string format if needed
-        console.log("Coordinates as string:", metadata.Coordinates);
-      }
+    const coords = getNestedObject(metadata, "Coordinates");
+    if (coords) {
+      ra = getNumericProp(coords, "RA", "Ra", "ra");
+      dec = getNumericProp(coords, "DEC", "Dec", "dec");
+    } else if (typeof metadata.Coordinates === "string") {
+      // Parse string format if needed
+      console.log("Coordinates as string:", metadata.Coordinates);
     }
 
     // Check for nested Coordinates object (N.I.N.A sometimes nests this)
-    if (metadata.Target?.Coordinates) {
-      const coords = metadata.Target.Coordinates;
-      ra = ra || coords.RA || coords.Ra || coords.ra;
-      dec = dec || coords.DEC || coords.Dec || coords.dec;
+    const target = getNestedObject(metadata, "Target");
+    const targetCoords = getNestedObject(target, "Coordinates");
+    if (targetCoords) {
+      ra = ra || getNumericProp(targetCoords, "RA", "Ra", "ra");
+      dec = dec || getNumericProp(targetCoords, "DEC", "Dec", "dec");
     }
 
     // Direct fields
-    ra = ra || metadata.RA || metadata.Ra || metadata.ra || metadata.RightAscension || metadata.RightAscensionHours;
-    dec = dec || metadata.DEC || metadata.Dec || metadata.dec || metadata.Declination || metadata.DeclinationDegrees;
+    ra = ra || getNumericProp(metadata, "RA", "Ra", "ra", "RightAscension", "RightAscensionHours");
+    dec = dec || getNumericProp(metadata, "DEC", "Dec", "dec", "Declination", "DeclinationDegrees");
 
     // Check TargetRA/TargetDec pattern
-    ra = ra || metadata.TargetRA || metadata.TargetRa || metadata.Target_RA;
-    dec = dec || metadata.TargetDEC || metadata.TargetDec || metadata.Target_DEC;
+    ra = ra || getNumericProp(metadata, "TargetRA", "TargetRa", "Target_RA");
+    dec = dec || getNumericProp(metadata, "TargetDEC", "TargetDec", "Target_DEC");
 
     // Convert from hours to degrees if needed (RA is often in hours)
     if (ra !== undefined && ra < 24) {
@@ -97,7 +115,7 @@ export function extractTargetWithCoordinates(
   // Helper to extract target name from container name
   function extractTargetName(containerName: string): string | null {
     // Remove "_Container" or " Container" suffix
-    let name = containerName
+    const name = containerName
       .replace(/_Container$/i, "")
       .replace(/ Container$/i, "")
       .trim();
