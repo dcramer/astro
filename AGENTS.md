@@ -1,27 +1,39 @@
-# Repository Guidelines
+# Agent Instructions
 
-## Project Structure & Module Organization
-- `nina/templates/` mirrors the N.I.N.A. library: `1. Setup`, `2. Targets`, `3. Misc`, and `4. Blocks`. Match the in-app folder names so exported JSON round-trips cleanly.
-- `ops/` stores shared runbooks (observing checklists, troubleshooting notes, import/export SOPs).
-- `nina/plugins/` contains plugin briefs; see `nina/plugins/sequencer-powerups.md` for an example.
-- `hardware/` documents the physical rig, spacing budgets, and filter details needed across all tooling.
+## Package Manager
+Use **pnpm**: `pnpm install`
 
-## Coding Style & Naming Conventions
-- JSON uses two-space indentation and retains CRLF line endings from N.I.N.A. exports.
-- File names should be descriptive (`Rosette SHO.template.json`) and ASCII-only.
-- Keep `$id`, `$type`, and `$values` entries in their original order; automation depends on these keys.
+## Commit Attribution
+AI commits MUST include:
+```
+Co-Authored-By: (the agent model's name and attribution byline)
+```
 
-## Testing Guidelines
-- Validate every changed template with `jq empty` before committing.
-- Import updates into a staging N.I.N.A. profile to confirm sequencer transitions, filter selections, and plugin-driven instructions (e.g., Sequencer Powerups Template by Reference).
-- Document any simulator or live-test results in commit messages or PR notes.
+## Project Structure
+| Directory | Purpose |
+|-----------|---------|
+| `nina/templates/` | N.I.N.A. sequencer templates (mirrors `1. Setup`, `2. Targets`, `3. Misc`, `4. Blocks`) |
+| `nina/plugins/` | Plugin briefs |
+| `ops/` | Runbooks, checklists, SOPs |
+| `hardware/` | Rig specs, spacing budgets, filter details |
+| `horizons/` | Horizon data |
+| `pixinsight/` | PixInsight scripts/configs |
 
-## Commit & Pull Request Guidelines
-- Use short, imperative commit messages (`Add narrowband startup template`).
-- In PR descriptions, include: summary of observing scenario, validation steps (simulator run, plate solve check), and any new plugin requirements.
-- Reference related issues or session logs, and scrub personal data (coordinates, API keys) before uploading exports.
+## JSON Conventions
+- Two-space indentation, CRLF line endings
+- Preserve `$id`, `$type`, `$values` key order
+- ASCII-only file names: `Rosette SHO.template.json`
 
-## Security & Configuration Tips
-- **Critical:** Never store personally identifiable information (PII) such as home addresses, names, phone numbers, or API credentials in this repo. Lat/long coordinates are acceptable only when they don't reveal a private residence.
-- Store plugin or profile exports only after removing sensitive identifiers.
-- Note required N.I.N.A. or .NET versions when adding plugins to avoid compatibility surprises during upgrades.
+## Validation
+```bash
+jq empty <file.json>
+```
+
+## Commits
+- Short, imperative: `Add narrowband startup template`
+- Include validation steps in PR notes
+
+## Security
+- **Never** store PII (addresses, names, phone numbers, API keys)
+- Lat/long acceptable only if not revealing private residence
+- Scrub sensitive data before uploading exports
