@@ -1,0 +1,26 @@
+---
+import { formatLocalTimeFallback, normalizeTimestamp, type LocalTimeFormat } from "@/lib/time";
+
+interface Props {
+  value: string | null | undefined;
+  format?: LocalTimeFormat;
+  class?: string;
+}
+
+const {
+  value,
+  format = "date-time",
+  class: className,
+} = Astro.props;
+
+const normalized = normalizeTimestamp(value);
+const fallback = formatLocalTimeFallback(normalized, format);
+---
+
+<time
+  class={className}
+  datetime={normalized ?? undefined}
+  data-local-time={normalized ? format : undefined}
+>
+  {fallback}
+</time>

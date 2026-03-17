@@ -1,0 +1,8 @@
+---
+import OverlayLayout from "@/layouts/OverlayLayout.astro";
+import OverlayDisplay from "@/components/overlay/OverlayDisplay";
+---
+
+<OverlayLayout title="Astro Overlay" description="Live overlay for the current imaging session.">
+  <OverlayDisplay client:load />
+</OverlayLayout>

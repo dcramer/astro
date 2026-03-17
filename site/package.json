@@ -1,0 +1,50 @@
+{
+  "name": "astro-site",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "cf:types": "wrangler types worker-configuration.d.ts --config wrangler.toml --include-runtime false",
+    "predev": "pnpm cf:types",
+    "prebuild": "pnpm cf:types",
+    "precheck": "pnpm cf:types",
+    "pretypecheck": "pnpm cf:types",
+    "predeploy": "pnpm cf:types",
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "deploy": "wrangler d1 migrations apply DB --remote --config wrangler.toml && wrangler deploy --config wrangler.toml",
+    "sync": "tsx src/sync/index.ts",
+    "check": "astro check",
+    "typecheck": "tsc --noEmit",
+    "db:generate": "drizzle-kit generate --config drizzle.config.ts",
+    "db:check": "drizzle-kit check --config drizzle.config.ts",
+    "db:apply": "wrangler d1 migrations apply DB --local --config wrangler.toml"
+  },
+  "dependencies": {
+    "@astrojs/cloudflare": "^13.1.2",
+    "@astrojs/react": "^5.0.0",
+    "@fontsource-variable/geist": "5.2.8",
+    "@fontsource-variable/geist-mono": "5.2.7",
+    "astro": "^6.0.5",
+    "dotenv": "^17.3.1",
+    "drizzle-orm": "^0.45.1",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.8",
+    "@cloudflare/workers-types": "^4.20260317.1",
+    "@tailwindcss/vite": "4.2.1",
+    "@types/node": "^24.10.1",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "drizzle-kit": "^0.31.10",
+    "tailwindcss": "4.2.1",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "wrangler": "^4.74.0"
+  },
+  "packageManager": "pnpm@10.14.0"
+}

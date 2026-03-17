@@ -1,0 +1,182 @@
+---
+import { env } from "cloudflare:workers";
+
+import LocalTime from "@/components/site/LocalTime.astro";
+import PublicHeader from "@/components/site/PublicHeader.astro";
+import SiteLayout from "@/layouts/SiteLayout.astro";
+import { getLiveApiResponse, getRecentSessions } from "@/lib/db";
+import { formatDuration } from "@nina/format";
+
+const live = await getLiveApiResponse(env);
+const recentSessions = await getRecentSessions(env, 8);
+const currentState = live.session?.currentState;
+const latestExposure = live.images[0] ?? null;
+const currentTarget =
+  currentState?.currentTarget?.name ??
+  latestExposure?.targetName ??
+  "No target";
+const weatherSummary =
+  currentState?.weather?.skyQuality != null && currentState?.weather?.humidityPercent != null
+    ? `${currentState.weather.skyQuality} SQM · ${currentState.weather.humidityPercent}% humidity`
+    : "—";
+---
+
+<SiteLayout title="astro.cra.mr" description="Current session and recent nights.">
+  <div class="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 pb-16 pt-8 sm:px-8 lg:px-12">
+    <PublicHeader />
+
+    <section class="grid gap-5 xl:grid-cols-[minmax(0,1.55fr)_minmax(20rem,0.95fr)]">
+      <article class="rounded-[18px] border border-line-soft bg-[image:var(--background-image-panel-surface)] px-6 py-6 shadow-[0_24px_80px_rgba(0,0,0,0.24)] sm:px-7 sm:py-7">
+        <div
+          class:list={[
+            "inline-flex items-center rounded-full border px-2.5 py-1 font-mono text-[0.65rem] uppercase tracking-[0.16em]",
+            live.stale ? "border-white/10 text-ink-soft" : "border-white/20 text-ink-muted",
+          ]}
+        >
+          {live.stale ? "Stale / offline" : "Live now"}
+        </div>
+        <h1 class="mt-4 text-[clamp(2.15rem,5vw,4.35rem)] font-medium tracking-[-0.045em] text-ink-strong">
+          {currentTarget}
+        </h1>
+        <p class="mt-3 max-w-[60ch] text-[0.96rem] leading-7 text-ink-muted">
+          {live.session
+            ? `Session ${live.session.displayName} is the public source of truth for what the rig is doing now. The site reads from Cloudflare storage, not the local N.I.N.A. host.`
+            : "No session has been synced yet. Once the local daemon starts pushing state, this page will populate automatically."}
+        </p>
+
+        <div class="mt-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div class="rounded-[16px] border border-line-soft bg-white/[0.015] px-4 py-3">
+            <div class="font-mono text-[0.68rem] uppercase tracking-[0.18em] text-ink-soft">Session</div>
+            <div class="mt-2 text-[1.05rem] font-medium text-ink-strong">
+              {live.session?.displayName ?? "Waiting"}
+            </div>
+          </div>
+          <div class="rounded-[16px] border border-line-soft bg-white/[0.015] px-4 py-3">
+            <div class="font-mono text-[0.68rem] uppercase tracking-[0.18em] text-ink-soft">Started</div>
+            <div class="mt-2 text-[1.05rem] font-medium text-ink-strong">
+              <LocalTime value={live.session?.startedAt ?? null} format="time" />
+            </div>
+          </div>
+          <div class="rounded-[16px] border border-line-soft bg-white/[0.015] px-4 py-3">
+            <div class="font-mono text-[0.68rem] uppercase tracking-[0.18em] text-ink-soft">Subs</div>
+            <div class="mt-2 text-[1.05rem] font-medium text-ink-strong">
+              {live.session?.exposureCount ?? 0}
+            </div>
+          </div>
+          <div class="rounded-[16px] border border-line-soft bg-white/[0.015] px-4 py-3">
+            <div class="font-mono text-[0.68rem] uppercase tracking-[0.18em] text-ink-soft">Integration</div>
+            <div class="mt-2 text-[1.05rem] font-medium text-ink-strong">
+              {live.session ? formatDuration(live.session.totalExposureSeconds) : "—"}
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <aside class="flex flex-col gap-5">
+        <section class="rounded-[18px] border border-line-soft bg-[image:var(--background-image-panel-surface)] px-6 py-6 shadow-[0_24px_80px_rgba(0,0,0,0.18)]">
+          <div class="font-mono text-[0.68rem] uppercase tracking-[0.18em] text-ink-soft">Current state</div>
+          <div class="mt-5 divide-y divide-line-soft border-y border-line-soft">
+            <div class="grid gap-2 py-4 sm:grid-cols-[minmax(0,0.7fr)_minmax(0,1fr)] sm:items-baseline">
+              <div class="font-mono text-[0.68rem] uppercase tracking-[0.18em] text-ink-soft">Camera</div>
+              <div class="text-[0.98rem] text-ink-muted">
+                {currentState?.advanced?.camera?.isExposing ? "Exposing" : "Idle"}
+              </div>
+            </div>
+            <div class="grid gap-2 py-4 sm:grid-cols-[minmax(0,0.7fr)_minmax(0,1fr)] sm:items-baseline">
+              <div class="font-mono text-[0.68rem] uppercase tracking-[0.18em] text-ink-soft">Mount</div>
+              <div class="text-[0.98rem] text-ink-muted">
+                {currentState?.mount?.connected ? currentState.mount.displayName ?? "Connected" : "Disconnected"}
+              </div>
+            </div>
+            <div class="grid gap-2 py-4 sm:grid-cols-[minmax(0,0.7fr)_minmax(0,1fr)] sm:items-baseline">
+              <div class="font-mono text-[0.68rem] uppercase tracking-[0.18em] text-ink-soft">Weather</div>
+              <div class="text-[0.98rem] text-ink-muted">{weatherSummary}</div>
+            </div>
+            <div class="grid gap-2 py-4 sm:grid-cols-[minmax(0,0.7fr)_minmax(0,1fr)] sm:items-baseline">
+              <div class="font-mono text-[0.68rem] uppercase tracking-[0.18em] text-ink-soft">Updated</div>
+              <div class="text-[0.98rem] text-ink-muted">
+                <LocalTime value={live.session?.lastSeenAt ?? null} format="date-time" />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="rounded-[18px] border border-line-soft bg-[image:var(--background-image-panel-surface)] px-6 py-6 shadow-[0_24px_80px_rgba(0,0,0,0.18)]">
+          <div class="font-mono text-[0.68rem] uppercase tracking-[0.18em] text-ink-soft">Latest sub</div>
+          {latestExposure ? (
+            <div class="mt-5 grid gap-3">
+              {latestExposure.thumbnailUrl ? (
+                <img
+                  src={latestExposure.thumbnailUrl}
+                  alt={latestExposure.targetName ?? "Latest exposure"}
+                  class="aspect-[4/3] rounded-[18px] object-cover"
+                />
+              ) : (
+                <div class="flex aspect-[4/3] items-center justify-center rounded-[18px] border border-dashed border-line-soft bg-white/[0.015] font-mono text-[0.68rem] uppercase tracking-[0.18em] text-ink-soft">
+                  No thumbnail
+                </div>
+              )}
+              <div class="space-y-1">
+                <strong class="block text-[1rem] font-medium text-ink-strong">
+                  {latestExposure.targetName ?? "Latest target"}
+                </strong>
+                <div class="text-sm text-ink-muted">
+                  {latestExposure.filterName ?? "Unknown filter"} · {formatDuration(latestExposure.exposureDurationSeconds)} · HFR {latestExposure.hfr ?? "—"}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div class="mt-5 text-sm text-ink-soft">No exposures have been archived yet.</div>
+          )}
+        </section>
+      </aside>
+    </section>
+
+    <section class="mt-12 flex flex-col gap-5">
+      <div class="flex items-end justify-between gap-4">
+        <h2 class="m-0 text-[1.8rem] font-medium tracking-[-0.04em] text-ink-strong">Session History</h2>
+        <a href="/sessions" class="text-sm text-ink-soft transition-colors hover:text-ink-strong">Full archive</a>
+      </div>
+
+      {recentSessions.length ? (
+        <div class="border-y border-line-soft">
+          {recentSessions.map((session) => (
+            <a
+              class="grid gap-4 border-t border-line-soft py-5 first:border-t-0 md:grid-cols-[minmax(0,1.45fr)_minmax(0,0.8fr)_minmax(0,0.4fr)_auto] md:items-center"
+              href={`/sessions/${encodeURIComponent(session.sessionKey)}`}
+            >
+              <div class="min-w-0">
+                <strong class="block text-[1rem] font-medium text-ink-strong">{session.displayName}</strong>
+                <div class="mt-1 text-sm text-ink-muted">
+                  {session.profileName ?? "Unknown profile"} · <LocalTime value={session.startedAt} format="date-time-short" />
+                </div>
+              </div>
+              <div class="min-w-0">
+                <div class="font-mono text-[0.68rem] uppercase tracking-[0.18em] text-ink-soft">Target</div>
+                <div class="mt-2 text-[0.98rem] text-ink-muted">{session.currentState?.currentTarget?.name ?? "—"}</div>
+              </div>
+              <div>
+                <div class="font-mono text-[0.68rem] uppercase tracking-[0.18em] text-ink-soft">Subs</div>
+                <div class="mt-2 text-[0.98rem] text-ink-muted">{session.exposureCount}</div>
+              </div>
+              <div>
+                <div
+                  class:list={[
+                    "inline-flex items-center rounded-full border px-2.5 py-1 font-mono text-[0.65rem] uppercase tracking-[0.16em]",
+                    session.stale ? "border-white/10 text-ink-soft" : "border-white/20 text-ink-muted",
+                  ]}
+                >
+                  {session.activeSession && !session.stale ? "Live" : session.endedAt ? "Completed" : "Pending"}
+                </div>
+              </div>
+            </a>
+          ))}
+        </div>
+      ) : (
+        <div class="border-y border-line-soft py-8 text-sm text-ink-soft">
+          The archive will populate after the first successful sync.
+        </div>
+      )}
+    </section>
+  </div>
+</SiteLayout>

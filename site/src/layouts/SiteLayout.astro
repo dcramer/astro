@@ -1,0 +1,75 @@
+---
+import "@/styles/global.css";
+
+interface Props {
+  title: string;
+  description?: string;
+  noindex?: boolean;
+}
+
+const {
+  title,
+  description = "Astrophotography session status and archive.",
+  noindex = false,
+} =
+  Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
+  </head>
+  <body>
+    <slot />
+    <script is:inline>
+      (() => {
+        const formatters = {
+          time: new Intl.DateTimeFormat(undefined, {
+            hour: "numeric",
+            minute: "2-digit",
+          }),
+          "date-time": new Intl.DateTimeFormat(undefined, {
+            dateStyle: "medium",
+            timeStyle: "short",
+          }),
+          "date-time-short": new Intl.DateTimeFormat(undefined, {
+            month: "short",
+            day: "numeric",
+            hour: "numeric",
+            minute: "2-digit",
+          }),
+        };
+
+        const updateTimes = () => {
+          document.querySelectorAll("[data-local-time]").forEach((node) => {
+            const element = node;
+            const format = element.getAttribute("data-local-time");
+            const dateTime = element.getAttribute("datetime");
+            if (!format || !dateTime) {
+              return;
+            }
+
+            const formatter = formatters[format];
+            const parsed = new Date(dateTime);
+            if (!formatter || Number.isNaN(parsed.getTime())) {
+              return;
+            }
+
+            element.textContent = formatter.format(parsed);
+          });
+        };
+
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", updateTimes, { once: true });
+        } else {
+          updateTimes();
+        }
+      })();
+    </script>
+  </body>
+</html>

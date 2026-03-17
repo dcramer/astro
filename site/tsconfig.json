@@ -1,0 +1,12 @@
+{
+  "extends": "astro/tsconfigs/strict",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "types": ["node", "@cloudflare/workers-types"],
+    "paths": {
+      "@/*": ["./src/*"],
+      "@nina/*": ["./src/lib/nina/*"]
+    }
+  },
+  "include": [".astro/types.d.ts", "worker-configuration.d.ts", "src/**/*"]
+}
