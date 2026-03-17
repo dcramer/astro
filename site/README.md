@@ -47,7 +47,7 @@ Configure the following before deploy:
 - D1 database bound as `DB`
 - R2 bucket bound as `THUMBNAILS`
 
-Cloudflare binding types are generated into `worker-configuration.d.ts` via `wrangler types`. The package scripts run that automatically before `dev`, `build`, `check`, `typecheck`, and `deploy`.
+Cloudflare binding types are generated into `worker-configuration.d.ts` via `wrangler types`. The package scripts run that automatically before `dev`, `build`, `check`, `typecheck`, and `cf:deploy`.
 
 For production, do not rely on the local dev secret. Set a real `SYNC_HMAC_SECRET` in Cloudflare and on the machine running `pnpm run sync`.
 
@@ -68,10 +68,10 @@ The D1 binding is configured to read migrations from `drizzle/`.
 For production, use the `deploy` script so migrations are applied as part of deployment:
 
 ```bash
-pnpm deploy
+pnpm run cf:deploy
 ```
 
-If you use Cloudflare Workers Builds with GitHub auto-deploys, set the deploy command to `pnpm deploy`.
+If you use Cloudflare Workers Builds with GitHub auto-deploys, set the deploy command to `pnpm run cf:deploy`.
 
 ## Validation
 
