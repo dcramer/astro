@@ -59,7 +59,8 @@ const filterNames = [...session.filterNames].sort((left, right) => {
 });
 const visibleFilterNames = filterNames.slice(0, 5);
 const remainingFilterCount = Math.max(0, filterNames.length - visibleFilterNames.length);
-const thumbnailTitle = targetName === "No target" ? session.displayName : targetName;
+const sessionTitle = targetName === "No target" ? session.displayName : targetName;
+const thumbnailTitle = sessionTitle;
 ---
 
 <article class="border-t border-line-soft py-5 first:border-t-0">
@@ -82,9 +83,8 @@ const thumbnailTitle = targetName === "No target" ? session.displayName : target
           <div class="flex items-start justify-between gap-3">
             <div class="min-w-0">
               <div class="truncate text-[1.08rem] font-medium tracking-[-0.03em] text-ink-strong transition-colors group-hover:text-white">
-                {session.displayName}
+                {sessionTitle}
               </div>
-              <div class="mt-1 truncate text-[0.98rem] text-ink-muted">{targetName}</div>
               <div class="mt-2 md:hidden text-[0.82rem] text-ink-soft">
                 <LocalTime value={session.startedAt} format="date-time-short" />
               </div>
