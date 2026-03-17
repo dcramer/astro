@@ -7,7 +7,7 @@ keep_vars = true
 [[d1_databases]]
 binding = "DB"
 database_name = "astro-site"
-database_id = "REPLACE_WITH_D1_DATABASE_ID"
+database_id = "fa54c98e-3196-4958-b0be-7e78154472f6"
 migrations_dir = "drizzle"
 
 [[r2_buckets]]
