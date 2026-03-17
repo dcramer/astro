@@ -36,6 +36,7 @@ import {
 
 interface SyncState {
   readonly version: number;
+  readonly syncTarget: string | null;
   readonly knownSessions: ReadonlyArray<string>;
   readonly uploadedThumbnailKeys: ReadonlyArray<string>;
   readonly lastActiveSessionKey: string | null;
@@ -93,6 +94,10 @@ function buildLivePreviewSignature(assetKey: string, bodyBase64: string): string
 const DEFAULT_SYNC_INTERVAL_MS = 30_000;
 const SYNC_STATE_FILE = process.env.SYNC_STATE_FILE?.trim() || path.resolve(".local/sync-state.json");
 
+function normalizeSyncTarget(url: string): string {
+  return url.replace(/\/+$/, "");
+}
+
 function getSyncIntervalMs(): number {
   const raw = process.env.SYNC_INTERVAL_MS;
   const parsed = raw ? Number.parseInt(raw, 10) : Number.NaN;
@@ -105,6 +110,7 @@ async function loadState(): Promise<SyncState> {
     const parsed = JSON.parse(raw) as SyncState;
     return {
       version: 1,
+      syncTarget: parsed.syncTarget ?? null,
       knownSessions: parsed.knownSessions ?? [],
       uploadedThumbnailKeys: parsed.uploadedThumbnailKeys ?? [],
       lastActiveSessionKey: parsed.lastActiveSessionKey ?? null,
@@ -113,6 +119,7 @@ async function loadState(): Promise<SyncState> {
   } catch {
     return {
       version: 1,
+      syncTarget: null,
       knownSessions: [],
       uploadedThumbnailKeys: [],
       lastActiveSessionKey: null,
@@ -537,12 +544,24 @@ async function uploadMissingAssets(
 
 async function syncOnce(previousState: SyncState): Promise<SyncRunResult> {
   const syncApiBaseUrl = getSyncApiBaseUrl();
+  const syncTarget = normalizeSyncTarget(syncApiBaseUrl);
   const secret = getLocalSyncHmacSecret();
   const ninaBaseUrl = getNinaBaseUrl();
   if (!ninaBaseUrl) {
     throw new Error("Invalid NINA session base URL.");
   }
   const syncedAt = new Date().toISOString();
+  const scopedState =
+    previousState.syncTarget === syncTarget
+      ? previousState
+      : {
+          version: 1,
+          syncTarget,
+          knownSessions: [],
+          uploadedThumbnailKeys: [],
+          lastActiveSessionKey: null,
+          lastLivePreviewSignature: null,
+        };
 
   const [sessionList, overlaySession, advancedStatus, imageHistory, mountInfo, weatherInfo] = await Promise.all([
     fetchSessionList(ninaBaseUrl),
@@ -556,14 +575,14 @@ async function syncOnce(previousState: SyncState): Promise<SyncRunResult> {
   const summaries = sessionList?.sessions ?? [];
   if (!summaries.length) {
     return {
-      state: previousState,
+      state: scopedState,
       summary: "no sessions found",
     };
   }
 
   const activeSessionKey = overlaySession?.summary.key ?? null;
   const summaryMap = new Map(summaries.map((summary) => [summary.key, summary]));
-  const sessionKeys = getCandidateSessionKeys(summaries, previousState, activeSessionKey);
+  const sessionKeys = getCandidateSessionKeys(summaries, scopedState, activeSessionKey);
   const latestImage = imageHistory[0] ?? null;
   const livePreviewAsset = activeSessionKey ? await fetchPreparedPreviewAsset() : null;
   const livePreview = activeSessionKey && livePreviewAsset
@@ -612,7 +631,7 @@ async function syncOnce(previousState: SyncState): Promise<SyncRunResult> {
 
   if (!sessions.length) {
     return {
-      state: previousState,
+      state: scopedState,
       summary: "no session payloads were built",
     };
   }
@@ -624,7 +643,7 @@ async function syncOnce(previousState: SyncState): Promise<SyncRunResult> {
 
   const shouldUploadLivePreview =
     Boolean(livePreview && livePreviewAsset) &&
-    livePreviewSignature !== previousState.lastLivePreviewSignature;
+    livePreviewSignature !== scopedState.lastLivePreviewSignature;
 
   if (livePreview && livePreviewAsset && shouldUploadLivePreview) {
     await uploadAsset(syncApiBaseUrl, secret, {
@@ -641,8 +660,9 @@ async function syncOnce(previousState: SyncState): Promise<SyncRunResult> {
 
   const assetSummary = await uploadMissingAssets(ninaBaseUrl, syncApiBaseUrl, secret, sessions, sessionHistories, {
     version: 1,
-    knownSessions: Array.from(new Set([...previousState.knownSessions, ...sessions.map((session) => session.sessionKey)])),
-    uploadedThumbnailKeys: previousState.uploadedThumbnailKeys,
+    syncTarget,
+    knownSessions: Array.from(new Set([...scopedState.knownSessions, ...sessions.map((session) => session.sessionKey)])),
+    uploadedThumbnailKeys: scopedState.uploadedThumbnailKeys,
     lastActiveSessionKey: activeSessionKey,
     lastLivePreviewSignature:
       livePreview && livePreviewAsset
@@ -684,7 +704,12 @@ async function syncOnce(previousState: SyncState): Promise<SyncRunResult> {
 
   return {
     state: assetSummary.state,
-    summary: summaryParts.join(", "),
+    summary: [
+      ...(previousState.syncTarget && previousState.syncTarget !== syncTarget
+        ? [`sync target changed to ${syncTarget}; state reset`]
+        : []),
+      summaryParts.join(", "),
+    ].join(", "),
   };
 }
 
