@@ -12,7 +12,7 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "cf:deploy": "pnpm build && wrangler d1 migrations apply DB --remote --config dist/server/wrangler.json && wrangler deploy --config dist/server/wrangler.json",
+    "cf:deploy": "pnpm build && wrangler d1 migrations apply DB --remote --config wrangler.toml && wrangler deploy --config dist/server/wrangler.json",
     "sync": "tsx src/sync/index.ts",
     "check": "astro check",
     "typecheck": "tsc --noEmit",

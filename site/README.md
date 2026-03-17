@@ -65,7 +65,7 @@ pnpm db:apply
 
 The D1 binding is configured to read migrations from `drizzle/`.
 
-For production, use the deploy script so Astro first generates the Worker output and then Wrangler applies migrations and deploys the generated `dist/server/wrangler.json`:
+For production, use the deploy script so Astro first generates the Worker output, Wrangler applies D1 migrations using the source `wrangler.toml`, and then deploys the generated `dist/server/wrangler.json`:
 
 ```bash
 pnpm run cf:deploy
