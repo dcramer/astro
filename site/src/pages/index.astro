@@ -1,182 +1,426 @@
 ---
 import { env } from "cloudflare:workers";
 
+import {
+  computeExposureProgress,
+  formatCameraStatus,
+  getRemainingSeconds,
+} from "@/components/overlay/utils/camera";
+import { formatMountDisplay } from "@/components/overlay/utils/mount";
+import { findSequenceItemByPath } from "@/components/overlay/utils/sequence/navigation";
+import {
+  formatSequenceProgressSuffix,
+  formatSequenceStatus,
+  normalizeSequenceBreadcrumbEntry,
+} from "@/components/overlay/utils/sequence/format";
+import {
+  formatAmbientTemperature,
+  formatHumidity,
+  formatSkyQuality,
+} from "@/components/overlay/utils/weather";
+import FilterSwatch from "@/components/site/FilterSwatch.astro";
 import LocalTime from "@/components/site/LocalTime.astro";
 import PublicHeader from "@/components/site/PublicHeader.astro";
 import SiteLayout from "@/layouts/SiteLayout.astro";
-import { getLiveApiResponse, getRecentSessions } from "@/lib/db";
-import { formatDuration } from "@nina/format";
+import { getLiveApiResponse, getSessionExposures } from "@/lib/db";
+import { type SessionStatusTone } from "@/lib/session-status";
+import { formatDuration, formatNumber } from "@nina/format";
 
 const live = await getLiveApiResponse(env);
-const recentSessions = await getRecentSessions(env, 8);
+const sessionExposures = live.session ? await getSessionExposures(env, live.session.sessionKey, 500) : [];
 const currentState = live.session?.currentState;
 const latestExposure = live.images[0] ?? null;
+const now = Date.now();
 const currentTarget =
   currentState?.currentTarget?.name ??
   latestExposure?.targetName ??
+  live.session?.primaryTargetName ??
   "No target";
-const weatherSummary =
-  currentState?.weather?.skyQuality != null && currentState?.weather?.humidityPercent != null
-    ? `${currentState.weather.skyQuality} SQM · ${currentState.weather.humidityPercent}% humidity`
-    : "—";
+const isOnline = Boolean(live.session?.activeSession && !live.stale && live.hasConnected);
+const camera = isOnline ? live.advanced?.camera ?? null : null;
+const connectionOptions = {
+  connectionOffline: live.stale || !live.hasConnected,
+  hasConnected: live.hasConnected,
+};
+const remainingSeconds = getRemainingSeconds(camera, now);
+const cameraProgress = camera
+  ? computeExposureProgress(
+      camera,
+      now,
+      latestExposure?.exposureDurationSeconds ?? camera.lastExposureDurationSeconds ?? null,
+      remainingSeconds,
+      remainingSeconds,
+    )
+  : null;
+const cameraStatus = camera
+  ? formatCameraStatus(camera, now, cameraProgress)
+  : isOnline
+    ? "—"
+    : "<Offline>";
+const mountStatus = formatMountDisplay(live.mount, connectionOptions);
+const skyQuality = formatSkyQuality(live.weather, connectionOptions);
+const ambientTemperature = formatAmbientTemperature(live.weather, connectionOptions);
+const humidity = formatHumidity(live.weather, connectionOptions);
+
+const sequence = isOnline ? live.advanced?.sequence ?? null : null;
+const runningSequenceItem = findSequenceItemByPath(sequence?.items, sequence?.breadcrumb ?? null);
+const sequenceProgressSuffix = formatSequenceProgressSuffix(runningSequenceItem, now);
+let sequenceStatus = sequence
+  ? formatSequenceStatus(sequence)
+  : isOnline
+    ? "—"
+    : "<Offline>";
+
+if (sequenceProgressSuffix) {
+  sequenceStatus = `${sequenceStatus}${sequenceProgressSuffix}`;
+}
+
+const sequenceBreadcrumb = sequence?.breadcrumb?.length
+  ? sequence.breadcrumb
+      .filter((entry): entry is string => Boolean(entry))
+      .filter((entry, index) => !(index === 0 && entry.toLowerCase().includes("container")))
+      .map((entry) => normalizeSequenceBreadcrumbEntry(entry))
+      .filter((entry): entry is string => Boolean(entry))
+  : [];
+const sequenceTrail = sequenceBreadcrumb.length ? sequenceBreadcrumb.join(" / ") : null;
+const latestDisplayExposure = live.images.find((image) => image.detectedStars !== null) ?? null;
+const latestExposureLabel = "Latest sub";
+const cameraProgressPercent = cameraProgress ? Math.max(0, Math.min(100, Math.round(cameraProgress.percent * 100))) : null;
+const latestHfr = latestDisplayExposure?.hfr !== null && latestDisplayExposure?.hfr !== undefined
+  ? formatNumber(latestDisplayExposure.hfr, 2)
+  : "—";
+const latestStars = latestDisplayExposure?.detectedStars !== null && latestDisplayExposure?.detectedStars !== undefined
+  ? String(latestDisplayExposure.detectedStars)
+  : "—";
+const latestGuideRms = latestDisplayExposure?.rmsText ?? "—";
+const liveStatusTone: SessionStatusTone = !live.session
+  ? "waiting"
+  : isOnline
+    ? "online"
+    : "offline";
+const liveStatusLabel = !live.session
+  ? "Waiting"
+  : isOnline
+    ? "Online"
+    : "Offline";
+const liveStatusDetail = !live.session
+  ? "Waiting for the first valid sub."
+  : isOnline
+    ? "Current session is reporting new data."
+    : live.session.activeSession
+      ? "Current session is not reporting new data."
+      : "Showing the most recent archived session.";
+const liveStatusDotClass = liveStatusTone === "online"
+  ? "bg-emerald-400 shadow-[0_0_18px_rgba(52,211,153,0.55)]"
+  : liveStatusTone === "offline"
+    ? "bg-rose-400 shadow-[0_0_18px_rgba(251,113,133,0.45)]"
+    : "bg-white/32";
+const sessionDurationSeconds = (() => {
+  if (!live.session) {
+    return null;
+  }
+
+  const startedAtMs = new Date(live.session.startedAt).getTime();
+  if (!Number.isFinite(startedAtMs)) {
+    return null;
+  }
+
+  const endedAtMs = live.session.endedAt ? new Date(live.session.endedAt).getTime() : Number.NaN;
+  const lastSeenAtMs = new Date(live.session.lastSeenAt).getTime();
+  const effectiveEndMs = Number.isFinite(endedAtMs)
+    ? endedAtMs
+    : Number.isFinite(lastSeenAtMs)
+      ? lastSeenAtMs
+      : now;
+
+  if (!Number.isFinite(effectiveEndMs) || effectiveEndMs < startedAtMs) {
+    return null;
+  }
+
+  return Math.round((effectiveEndMs - startedAtMs) / 1000);
+})();
+const FILTER_SORT_ORDER = ["L", "R", "G", "B", "Ha", "OIII", "SII", "Unfiltered"];
+const filterLabels = new Set<string>();
+
+for (const exposure of sessionExposures) {
+  filterLabels.add(exposure.filterName?.trim() || "Unfiltered");
+}
+
+if (!filterLabels.size && latestDisplayExposure?.filterName) {
+  filterLabels.add(latestDisplayExposure.filterName.trim());
+}
+
+const filterBreakdown = Array.from(filterLabels).sort((left, right) => {
+  const leftIndex = FILTER_SORT_ORDER.indexOf(left);
+  const rightIndex = FILTER_SORT_ORDER.indexOf(right);
+
+  if (leftIndex !== -1 || rightIndex !== -1) {
+    if (leftIndex === -1) {
+      return 1;
+    }
+    if (rightIndex === -1) {
+      return -1;
+    }
+    if (leftIndex !== rightIndex) {
+      return leftIndex - rightIndex;
+    }
+  }
+
+  return left.localeCompare(right);
+});
 ---
 
 <SiteLayout title="astro.cra.mr" description="Current session and recent nights.">
   <div class="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 pb-16 pt-8 sm:px-8 lg:px-12">
     <PublicHeader />
 
-    <section class="grid gap-5 xl:grid-cols-[minmax(0,1.55fr)_minmax(20rem,0.95fr)]">
-      <article class="rounded-[18px] border border-line-soft bg-[image:var(--background-image-panel-surface)] px-6 py-6 shadow-[0_24px_80px_rgba(0,0,0,0.24)] sm:px-7 sm:py-7">
-        <div
-          class:list={[
-            "inline-flex items-center rounded-full border px-2.5 py-1 font-mono text-[0.65rem] uppercase tracking-[0.16em]",
-            live.stale ? "border-white/10 text-ink-soft" : "border-white/20 text-ink-muted",
-          ]}
-        >
-          {live.stale ? "Stale / offline" : "Live now"}
-        </div>
-        <h1 class="mt-4 text-[clamp(2.15rem,5vw,4.35rem)] font-medium tracking-[-0.045em] text-ink-strong">
-          {currentTarget}
-        </h1>
-        <p class="mt-3 max-w-[60ch] text-[0.96rem] leading-7 text-ink-muted">
-          {live.session
-            ? `Session ${live.session.displayName} is the public source of truth for what the rig is doing now. The site reads from Cloudflare storage, not the local N.I.N.A. host.`
-            : "No session has been synced yet. Once the local daemon starts pushing state, this page will populate automatically."}
-        </p>
-
-        <div class="mt-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <div class="rounded-[16px] border border-line-soft bg-white/[0.015] px-4 py-3">
-            <div class="font-mono text-[0.68rem] uppercase tracking-[0.18em] text-ink-soft">Session</div>
-            <div class="mt-2 text-[1.05rem] font-medium text-ink-strong">
-              {live.session?.displayName ?? "Waiting"}
-            </div>
-          </div>
-          <div class="rounded-[16px] border border-line-soft bg-white/[0.015] px-4 py-3">
-            <div class="font-mono text-[0.68rem] uppercase tracking-[0.18em] text-ink-soft">Started</div>
-            <div class="mt-2 text-[1.05rem] font-medium text-ink-strong">
-              <LocalTime value={live.session?.startedAt ?? null} format="time" />
-            </div>
-          </div>
-          <div class="rounded-[16px] border border-line-soft bg-white/[0.015] px-4 py-3">
-            <div class="font-mono text-[0.68rem] uppercase tracking-[0.18em] text-ink-soft">Subs</div>
-            <div class="mt-2 text-[1.05rem] font-medium text-ink-strong">
-              {live.session?.exposureCount ?? 0}
-            </div>
-          </div>
-          <div class="rounded-[16px] border border-line-soft bg-white/[0.015] px-4 py-3">
-            <div class="font-mono text-[0.68rem] uppercase tracking-[0.18em] text-ink-soft">Integration</div>
-            <div class="mt-2 text-[1.05rem] font-medium text-ink-strong">
-              {live.session ? formatDuration(live.session.totalExposureSeconds) : "—"}
-            </div>
-          </div>
-        </div>
-      </article>
-
-      <aside class="flex flex-col gap-5">
-        <section class="rounded-[18px] border border-line-soft bg-[image:var(--background-image-panel-surface)] px-6 py-6 shadow-[0_24px_80px_rgba(0,0,0,0.18)]">
-          <div class="font-mono text-[0.68rem] uppercase tracking-[0.18em] text-ink-soft">Current state</div>
-          <div class="mt-5 divide-y divide-line-soft border-y border-line-soft">
-            <div class="grid gap-2 py-4 sm:grid-cols-[minmax(0,0.7fr)_minmax(0,1fr)] sm:items-baseline">
-              <div class="font-mono text-[0.68rem] uppercase tracking-[0.18em] text-ink-soft">Camera</div>
-              <div class="text-[0.98rem] text-ink-muted">
-                {currentState?.advanced?.camera?.isExposing ? "Exposing" : "Idle"}
-              </div>
-            </div>
-            <div class="grid gap-2 py-4 sm:grid-cols-[minmax(0,0.7fr)_minmax(0,1fr)] sm:items-baseline">
-              <div class="font-mono text-[0.68rem] uppercase tracking-[0.18em] text-ink-soft">Mount</div>
-              <div class="text-[0.98rem] text-ink-muted">
-                {currentState?.mount?.connected ? currentState.mount.displayName ?? "Connected" : "Disconnected"}
-              </div>
-            </div>
-            <div class="grid gap-2 py-4 sm:grid-cols-[minmax(0,0.7fr)_minmax(0,1fr)] sm:items-baseline">
-              <div class="font-mono text-[0.68rem] uppercase tracking-[0.18em] text-ink-soft">Weather</div>
-              <div class="text-[0.98rem] text-ink-muted">{weatherSummary}</div>
-            </div>
-            <div class="grid gap-2 py-4 sm:grid-cols-[minmax(0,0.7fr)_minmax(0,1fr)] sm:items-baseline">
-              <div class="font-mono text-[0.68rem] uppercase tracking-[0.18em] text-ink-soft">Updated</div>
-              <div class="text-[0.98rem] text-ink-muted">
-                <LocalTime value={live.session?.lastSeenAt ?? null} format="date-time" />
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section class="rounded-[18px] border border-line-soft bg-[image:var(--background-image-panel-surface)] px-6 py-6 shadow-[0_24px_80px_rgba(0,0,0,0.18)]">
-          <div class="font-mono text-[0.68rem] uppercase tracking-[0.18em] text-ink-soft">Latest sub</div>
-          {latestExposure ? (
-            <div class="mt-5 grid gap-3">
-              {latestExposure.thumbnailUrl ? (
+    <section class="pt-2">
+      <div class="grid gap-7 lg:grid-cols-[minmax(18rem,21rem)_minmax(0,1fr)] lg:items-start">
+          <div class="space-y-4 lg:sticky lg:top-8">
+            {latestDisplayExposure?.thumbnailUrl ? (
+              <button
+                type="button"
+                data-lightbox-src={latestDisplayExposure.thumbnailUrl}
+                data-lightbox-label={latestExposureLabel}
+                data-lightbox-title={latestDisplayExposure.targetName ?? currentTarget}
+                data-lightbox-time={latestDisplayExposure.startTime}
+                data-lightbox-filter={latestDisplayExposure.filterName ?? "—"}
+                data-lightbox-duration={formatDuration(latestDisplayExposure.exposureDurationSeconds)}
+                data-lightbox-hfr={latestHfr}
+                data-lightbox-stars={latestStars}
+                data-lightbox-rms={latestGuideRms}
+                data-lightbox-alt={latestDisplayExposure.targetName ?? "Latest exposure"}
+                class="block cursor-zoom-in overflow-hidden rounded-[20px] border border-line-soft bg-black text-left shadow-[0_20px_60px_rgba(0,0,0,0.34)] transition-transform hover:scale-[1.002]"
+                aria-label="Expand latest exposure"
+              >
                 <img
-                  src={latestExposure.thumbnailUrl}
-                  alt={latestExposure.targetName ?? "Latest exposure"}
-                  class="aspect-[4/3] rounded-[18px] object-cover"
+                  src={latestDisplayExposure.thumbnailUrl}
+                  alt={latestDisplayExposure.targetName ?? "Latest exposure"}
+                  class="aspect-[4/3] w-full object-cover"
                 />
+              </button>
+            ) : (
+              <div class="flex aspect-[4/3] items-center justify-center rounded-[20px] border border-dashed border-line-soft bg-black/30 font-mono text-[0.68rem] uppercase tracking-[0.2em] text-ink-soft">
+                Waiting for first real sub
+              </div>
+            )}
+
+            <section class="rounded-[18px] border border-line-soft bg-black/18 px-4 py-4">
+              <div class="flex items-center justify-between gap-3">
+                <div class="font-mono text-[0.6rem] uppercase tracking-[0.24em] text-ink-soft">
+                  {latestExposureLabel}
+                </div>
+                {latestDisplayExposure ? (
+                  <FilterSwatch
+                    filterName={latestDisplayExposure.filterName}
+                    class="text-[0.74rem] text-ink-muted"
+                    labelClass="font-mono uppercase tracking-[0.14em]"
+                  />
+                ) : null}
+              </div>
+
+              {latestDisplayExposure ? (
+                <div class="mt-4 grid gap-4">
+                  <div>
+                    <div class="text-[1.08rem] font-medium tracking-[-0.02em] text-ink-strong">
+                      {latestDisplayExposure.targetName ?? currentTarget}
+                    </div>
+                    <div class="mt-1 text-[0.86rem] text-ink-muted">
+                      <LocalTime value={latestDisplayExposure.startTime} format="date-time-short" />
+                    </div>
+                  </div>
+
+                  <div class="grid grid-cols-2 gap-x-4 gap-y-3">
+                    <div class="border-t border-line-soft pt-2.5">
+                      <div class="font-mono text-[0.56rem] uppercase tracking-[0.22em] text-ink-soft">Duration</div>
+                      <div class="mt-1 text-[0.94rem] text-ink-strong">
+                        {formatDuration(latestDisplayExposure.exposureDurationSeconds)}
+                      </div>
+                    </div>
+                    <div class="border-t border-line-soft pt-2.5">
+                      <div class="font-mono text-[0.56rem] uppercase tracking-[0.22em] text-ink-soft">HFR</div>
+                      <div class="mt-1 text-[0.94rem] text-ink-strong">{latestHfr}</div>
+                    </div>
+                    <div class="border-t border-line-soft pt-2.5">
+                      <div class="font-mono text-[0.56rem] uppercase tracking-[0.22em] text-ink-soft">Stars</div>
+                      <div class="mt-1 text-[0.94rem] text-ink-strong">{latestStars}</div>
+                    </div>
+                    <div class="border-t border-line-soft pt-2.5">
+                      <div class="font-mono text-[0.56rem] uppercase tracking-[0.22em] text-ink-soft">Guide RMS</div>
+                      <div class="mt-1 text-[0.94rem] text-ink-strong">{latestGuideRms}</div>
+                    </div>
+                  </div>
+                </div>
               ) : (
-                <div class="flex aspect-[4/3] items-center justify-center rounded-[18px] border border-dashed border-line-soft bg-white/[0.015] font-mono text-[0.68rem] uppercase tracking-[0.18em] text-ink-soft">
-                  No thumbnail
-                </div>
+                <div class="mt-4 text-[0.92rem] text-ink-muted">No completed subs have been archived yet.</div>
               )}
-              <div class="space-y-1">
-                <strong class="block text-[1rem] font-medium text-ink-strong">
-                  {latestExposure.targetName ?? "Latest target"}
-                </strong>
-                <div class="text-sm text-ink-muted">
-                  {latestExposure.filterName ?? "Unknown filter"} · {formatDuration(latestExposure.exposureDurationSeconds)} · HFR {latestExposure.hfr ?? "—"}
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div class="mt-5 text-sm text-ink-soft">No exposures have been archived yet.</div>
-          )}
-        </section>
-      </aside>
-    </section>
+            </section>
+          </div>
 
-    <section class="mt-12 flex flex-col gap-5">
-      <div class="flex items-end justify-between gap-4">
-        <h2 class="m-0 text-[1.8rem] font-medium tracking-[-0.04em] text-ink-strong">Session History</h2>
-        <a href="/sessions" class="text-sm text-ink-soft transition-colors hover:text-ink-strong">Full archive</a>
-      </div>
-
-      {recentSessions.length ? (
-        <div class="border-y border-line-soft">
-          {recentSessions.map((session) => (
-            <a
-              class="grid gap-4 border-t border-line-soft py-5 first:border-t-0 md:grid-cols-[minmax(0,1.45fr)_minmax(0,0.8fr)_minmax(0,0.4fr)_auto] md:items-center"
-              href={`/sessions/${encodeURIComponent(session.sessionKey)}`}
-            >
-              <div class="min-w-0">
-                <strong class="block text-[1rem] font-medium text-ink-strong">{session.displayName}</strong>
-                <div class="mt-1 text-sm text-ink-muted">
-                  {session.profileName ?? "Unknown profile"} · <LocalTime value={session.startedAt} format="date-time-short" />
-                </div>
-              </div>
-              <div class="min-w-0">
-                <div class="font-mono text-[0.68rem] uppercase tracking-[0.18em] text-ink-soft">Target</div>
-                <div class="mt-2 text-[0.98rem] text-ink-muted">{session.currentState?.currentTarget?.name ?? "—"}</div>
-              </div>
-              <div>
-                <div class="font-mono text-[0.68rem] uppercase tracking-[0.18em] text-ink-soft">Subs</div>
-                <div class="mt-2 text-[0.98rem] text-ink-muted">{session.exposureCount}</div>
-              </div>
-              <div>
+          <div class="flex flex-col gap-8">
+            <div>
+              <div class="flex flex-wrap items-center gap-2">
                 <div
                   class:list={[
-                    "inline-flex items-center rounded-full border px-2.5 py-1 font-mono text-[0.65rem] uppercase tracking-[0.16em]",
-                    session.stale ? "border-white/10 text-ink-soft" : "border-white/20 text-ink-muted",
+                    "inline-flex items-center gap-2 rounded-full border px-2.5 py-1 font-mono text-[0.62rem] uppercase tracking-[0.18em]",
+                    liveStatusTone === "online"
+                      ? "border-live-line-strong text-live-soft"
+                      : "border-white/10 text-ink-muted",
                   ]}
                 >
-                  {session.activeSession && !session.stale ? "Live" : session.endedAt ? "Completed" : "Pending"}
+                  <span class:list={["h-2 w-2 rounded-full", liveStatusDotClass]} />
+                  {liveStatusLabel}
+                </div>
+
+                {live.session ? (
+                  <div class="inline-flex items-center rounded-full border border-line-soft px-2.5 py-1 font-mono text-[0.62rem] uppercase tracking-[0.18em] text-ink-muted">
+                    {live.session.displayName}
+                  </div>
+                ) : null}
+
+                {live.session?.profileName ? (
+                  <div class="inline-flex items-center rounded-full border border-line-soft px-2.5 py-1 font-mono text-[0.62rem] uppercase tracking-[0.18em] text-ink-muted">
+                    {live.session.profileName}
+                  </div>
+                ) : null}
+              </div>
+
+              <div class="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(15rem,0.8fr)] lg:items-start">
+                <div class="min-w-0">
+                  <div class="font-mono text-[0.58rem] uppercase tracking-[0.26em] text-ink-soft">
+                    Target
+                  </div>
+                  <h1 class="mt-3 text-[clamp(2.4rem,5vw,4.8rem)] font-medium leading-[0.95] tracking-[-0.06em] text-ink-strong">
+                    {currentTarget}
+                  </h1>
+
+                  <div class="mt-4 max-w-xl text-[0.92rem] text-ink-muted">
+                    {liveStatusDetail}
+                  </div>
+
+                  {sequenceTrail ? (
+                    <div class="mt-5 border-l border-line-strong pl-4 font-mono text-[0.72rem] uppercase tracking-[0.15em] text-ink-muted">
+                      {sequenceTrail}
+                    </div>
+                  ) : null}
+                </div>
+
+                <div class="grid gap-3">
+                  <div class="border-t border-line-soft pt-3">
+                    <div class="font-mono text-[0.56rem] uppercase tracking-[0.22em] text-ink-soft">Started</div>
+                    <div class="mt-1 text-[0.95rem] text-ink-strong">
+                      <LocalTime value={live.session?.startedAt ?? null} format="date-time-short" />
+                    </div>
+                  </div>
+                <div class="border-t border-line-soft pt-3">
+                  <div class="font-mono text-[0.56rem] uppercase tracking-[0.22em] text-ink-soft">Duration</div>
+                  <div class="mt-1 text-[0.95rem] text-ink-strong">
+                    {sessionDurationSeconds !== null ? formatDuration(sessionDurationSeconds) : "—"}
+                  </div>
                 </div>
               </div>
-            </a>
-          ))}
-        </div>
-      ) : (
-        <div class="border-y border-line-soft py-8 text-sm text-ink-soft">
-          The archive will populate after the first successful sync.
-        </div>
-      )}
+            </div>
+
+              {cameraProgressPercent !== null ? (
+                <div class="mt-6">
+                  <div class="flex items-center justify-between gap-3 font-mono text-[0.56rem] uppercase tracking-[0.22em] text-ink-soft">
+                    <span>Exposure progress</span>
+                    <span>{cameraProgressPercent}%</span>
+                  </div>
+                  <div class="mt-2 h-2.5 overflow-hidden rounded-full bg-white/7">
+                    <div
+                      class="h-full rounded-full bg-[linear-gradient(90deg,rgba(255,255,255,0.72),rgba(142,112,255,0.88))]"
+                      style={`width:${cameraProgressPercent}%`}
+                    />
+                  </div>
+                </div>
+              ) : null}
+            </div>
+
+            <div class="grid gap-5 lg:grid-cols-2">
+              <section class="rounded-[18px] border border-line-soft bg-black/12 px-4 py-4">
+                <div class="font-mono text-[0.58rem] uppercase tracking-[0.24em] text-ink-soft">Rig status</div>
+                {isOnline ? (
+                  <div class="mt-4 grid gap-3">
+                    <div class="flex items-start justify-between gap-4 border-t border-line-soft pt-3 first:border-t-0 first:pt-0">
+                      <div class="font-mono text-[0.56rem] uppercase tracking-[0.2em] text-ink-soft">Camera</div>
+                      <div class="max-w-[16rem] text-right text-[0.96rem] text-ink-strong">{cameraStatus}</div>
+                    </div>
+                    <div class="flex items-start justify-between gap-4 border-t border-line-soft pt-3">
+                      <div class="font-mono text-[0.56rem] uppercase tracking-[0.2em] text-ink-soft">Sequencer</div>
+                      <div class="max-w-[16rem] text-right text-[0.96rem] text-ink-strong">{sequenceStatus}</div>
+                    </div>
+                    <div class="flex items-start justify-between gap-4 border-t border-line-soft pt-3">
+                      <div class="font-mono text-[0.56rem] uppercase tracking-[0.2em] text-ink-soft">Mount</div>
+                      <div class="max-w-[16rem] text-right text-[0.96rem] text-ink-strong">{mountStatus}</div>
+                    </div>
+                  </div>
+                ) : (
+                  <div class="mt-4 flex min-h-[8.75rem] items-center justify-center rounded-[14px] border border-dashed border-line-soft bg-black/18">
+                    <span class="font-mono text-[0.72rem] uppercase tracking-[0.22em] text-ink-soft">
+                      &lt;Offline&gt;
+                    </span>
+                  </div>
+                )}
+              </section>
+
+              <section class="rounded-[18px] border border-line-soft bg-black/12 px-4 py-4">
+                <div class="font-mono text-[0.58rem] uppercase tracking-[0.24em] text-ink-soft">Environment</div>
+                {isOnline ? (
+                  <div class="mt-4 grid gap-3 sm:grid-cols-3">
+                    <div class="border-t border-line-soft pt-3 sm:border-t-0 sm:pt-0">
+                      <div class="font-mono text-[0.56rem] uppercase tracking-[0.2em] text-ink-soft">Sky</div>
+                      <div class="mt-1 text-[1rem] text-ink-strong">{skyQuality}</div>
+                    </div>
+                    <div class="border-t border-line-soft pt-3 sm:border-t-0 sm:pt-0">
+                      <div class="font-mono text-[0.56rem] uppercase tracking-[0.2em] text-ink-soft">Ambient</div>
+                      <div class="mt-1 text-[1rem] text-ink-strong">{ambientTemperature}</div>
+                    </div>
+                    <div class="border-t border-line-soft pt-3 sm:border-t-0 sm:pt-0">
+                      <div class="font-mono text-[0.56rem] uppercase tracking-[0.2em] text-ink-soft">Humidity</div>
+                      <div class="mt-1 text-[1rem] text-ink-strong">{humidity}</div>
+                    </div>
+                  </div>
+                ) : (
+                  <div class="mt-4 flex min-h-[8.75rem] items-center justify-center rounded-[14px] border border-dashed border-line-soft bg-black/18">
+                    <span class="font-mono text-[0.72rem] uppercase tracking-[0.22em] text-ink-soft">
+                      &lt;Offline&gt;
+                    </span>
+                  </div>
+                )}
+              </section>
+            </div>
+
+            <div class="grid gap-4 sm:grid-cols-3">
+              <div class="border-t border-line-soft pt-3">
+                <div class="font-mono text-[0.58rem] uppercase tracking-[0.22em] text-ink-soft">Total subs</div>
+                <div class="mt-1 text-[1.15rem] font-medium text-ink-strong">{live.session?.exposureCount ?? 0}</div>
+              </div>
+              <div class="border-t border-line-soft pt-3">
+                <div class="font-mono text-[0.58rem] uppercase tracking-[0.22em] text-ink-soft">Integration</div>
+                <div class="mt-1 text-[1.15rem] font-medium text-ink-strong">
+                  {live.session ? formatDuration(live.session.totalExposureSeconds) : "—"}
+                </div>
+              </div>
+              <div class="border-t border-line-soft pt-3">
+                <div class="font-mono text-[0.58rem] uppercase tracking-[0.22em] text-ink-soft">Filters</div>
+                <div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2 text-[0.92rem] text-ink-strong">
+                  {filterBreakdown.length ? filterBreakdown.map((filter) => (
+                    <div class="inline-flex items-center gap-2">
+                      <FilterSwatch
+                        filterName={filter === "Unfiltered" ? null : filter}
+                        class="text-[0.92rem] text-ink-strong"
+                        squareClass="h-2.5 w-2.5"
+                      />
+                    </div>
+                  )) : (
+                    <span class="text-[0.96rem] text-ink-muted">—</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+      </div>
     </section>
   </div>
 </SiteLayout>

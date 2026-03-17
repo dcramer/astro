@@ -39,6 +39,17 @@ function parseNumber(value: unknown): number | null {
   return null;
 }
 
+function parseDelimitedValues(value: unknown): string[] {
+  if (typeof value !== "string" || !value.trim()) {
+    return [];
+  }
+
+  return value
+    .split("||")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
 function buildAssetUrl(assetKey: string | null | undefined): string | null {
   if (!assetKey) {
     return null;
@@ -91,7 +102,7 @@ function toLivePreviewImage(
     cameraName: "",
     gain: 0,
     offset: 0,
-    startTime: preview.capturedAt,
+    startTime: preview.capturedAt ?? session.lastSeenAt ?? session.startedAt,
     telescopeName: "",
     focalLength: 0,
     stDev: 0,
@@ -120,13 +131,17 @@ function toStoredSession(row: Record<string, unknown>, stale: boolean): StoredSe
     startedAt: String(row.started_at),
     endedAt: row.ended_at ? String(row.ended_at) : null,
     profileName: row.profile_name ? String(row.profile_name) : null,
+    primaryTargetName: row.primary_target_name ? String(row.primary_target_name) : null,
+    targetNames: parseDelimitedValues(row.target_names_csv),
+    filterNames: parseDelimitedValues(row.filter_names_csv),
     activeSession: asBoolean(row.active_session),
     sessionStatus: row.session_status ? String(row.session_status) : null,
     lastSeenAt: String(row.last_seen_at),
-    exposureCount: parseNumber(row.exposure_count) ?? 0,
-    totalExposureSeconds: parseNumber(row.total_exposure_seconds) ?? 0,
-    latestExposureId: row.latest_exposure_id ? String(row.latest_exposure_id) : null,
-    heroExposureId: row.hero_exposure_id ? String(row.hero_exposure_id) : null,
+    exposureCount: parseNumber(row.valid_exposure_count) ?? 0,
+    totalExposureSeconds: parseNumber(row.valid_total_exposure_seconds) ?? 0,
+    latestExposureId: row.latest_valid_exposure_id ? String(row.latest_valid_exposure_id) : null,
+    heroExposureId: row.latest_valid_exposure_id ? String(row.latest_valid_exposure_id) : null,
+    heroThumbnailUrl: buildAssetUrl(row.hero_thumbnail_key ? String(row.hero_thumbnail_key) : null),
     stale,
     currentState: parseJson<SessionCurrentState>(
       row.current_state_payload ? String(row.current_state_payload) : null,
@@ -161,6 +176,78 @@ function toStoredExposure(row: Record<string, unknown>): StoredExposure {
   };
 }
 
+const SESSION_SELECT = `
+  SELECT
+    sessions.*,
+    (
+      SELECT COUNT(*)
+      FROM exposures
+      WHERE exposures.session_key = sessions.session_key
+        AND exposures.detected_stars IS NOT NULL
+    ) AS valid_exposure_count,
+    (
+      SELECT COALESCE(SUM(exposures.duration_seconds), 0)
+      FROM exposures
+      WHERE exposures.session_key = sessions.session_key
+        AND exposures.detected_stars IS NOT NULL
+    ) AS valid_total_exposure_seconds,
+    (
+      SELECT exposures.exposure_id
+      FROM exposures
+      WHERE exposures.session_key = sessions.session_key
+        AND exposures.detected_stars IS NOT NULL
+      ORDER BY datetime(exposures.started_at) DESC, exposures.exposure_id DESC
+      LIMIT 1
+    ) AS latest_valid_exposure_id,
+    (
+      SELECT exposures.thumbnail_key
+      FROM exposures
+      WHERE exposures.session_key = sessions.session_key
+        AND exposures.detected_stars IS NOT NULL
+        AND exposures.thumbnail_key IS NOT NULL
+      ORDER BY datetime(exposures.started_at) DESC, exposures.exposure_id DESC
+      LIMIT 1
+    ) AS hero_thumbnail_key,
+    (
+      SELECT target_name
+      FROM exposures
+      WHERE exposures.session_key = sessions.session_key
+        AND exposures.detected_stars IS NOT NULL
+        AND exposures.target_name IS NOT NULL
+        AND TRIM(exposures.target_name) != ''
+      GROUP BY exposures.target_name
+      ORDER BY COUNT(*) DESC, MAX(datetime(exposures.started_at)) DESC, exposures.target_name ASC
+      LIMIT 1
+    ) AS primary_target_name,
+    (
+      SELECT GROUP_CONCAT(target_name, '||')
+      FROM (
+        SELECT exposures.target_name AS target_name
+        FROM exposures
+        WHERE exposures.session_key = sessions.session_key
+          AND exposures.detected_stars IS NOT NULL
+          AND exposures.target_name IS NOT NULL
+          AND TRIM(exposures.target_name) != ''
+        GROUP BY exposures.target_name
+        ORDER BY COUNT(*) DESC, MAX(datetime(exposures.started_at)) DESC, exposures.target_name ASC
+      )
+    ) AS target_names_csv,
+    (
+      SELECT GROUP_CONCAT(filter_name, '||')
+      FROM (
+        SELECT exposures.filter_name AS filter_name
+        FROM exposures
+        WHERE exposures.session_key = sessions.session_key
+          AND exposures.detected_stars IS NOT NULL
+          AND exposures.filter_name IS NOT NULL
+          AND TRIM(exposures.filter_name) != ''
+        GROUP BY exposures.filter_name
+        ORDER BY MAX(datetime(exposures.started_at)) DESC, exposures.filter_name ASC
+      )
+    ) AS filter_names_csv
+  FROM sessions
+`;
+
 function isSessionStale(lastSeenAt: string, staleAfterSeconds: number): boolean {
   const lastSeen = new Date(lastSeenAt).getTime();
   if (!Number.isFinite(lastSeen)) {
@@ -173,9 +260,14 @@ function isSessionStale(lastSeenAt: string, staleAfterSeconds: number): boolean 
 export async function getLatestLiveSession(env: SiteRuntimeEnv): Promise<StoredSession | null> {
   const row = await env.DB.prepare(
     `
-      SELECT *
-      FROM sessions
-      ORDER BY datetime(last_seen_at) DESC
+      ${SESSION_SELECT}
+      WHERE EXISTS (
+        SELECT 1
+        FROM exposures
+        WHERE exposures.session_key = sessions.session_key
+          AND exposures.detected_stars IS NOT NULL
+      )
+      ORDER BY active_session DESC, datetime(last_seen_at) DESC, datetime(started_at) DESC
       LIMIT 1
     `,
   ).first<Record<string, unknown>>();
@@ -193,9 +285,13 @@ export async function getRecentSessions(
 ): Promise<StoredSession[]> {
   const rows = await env.DB.prepare(
     `
-      SELECT *
-      FROM sessions
-      WHERE exposure_count > 0
+      ${SESSION_SELECT}
+      WHERE EXISTS (
+          SELECT 1
+          FROM exposures
+          WHERE exposures.session_key = sessions.session_key
+            AND exposures.detected_stars IS NOT NULL
+        )
       ORDER BY datetime(started_at) DESC
       LIMIT ?
     `,
@@ -215,9 +311,14 @@ export async function getSessionByKey(
 ): Promise<StoredSession | null> {
   const row = await env.DB.prepare(
     `
-      SELECT *
-      FROM sessions
+      ${SESSION_SELECT}
       WHERE session_key = ?
+        AND EXISTS (
+          SELECT 1
+          FROM exposures
+          WHERE exposures.session_key = sessions.session_key
+            AND exposures.detected_stars IS NOT NULL
+        )
       LIMIT 1
     `,
   )
@@ -241,6 +342,7 @@ export async function getSessionExposures(
       SELECT *
       FROM exposures
       WHERE session_key = ?
+        AND detected_stars IS NOT NULL
       ORDER BY datetime(started_at) DESC
       LIMIT ?
     `,
@@ -274,6 +376,7 @@ export async function getLiveApiResponse(env: SiteRuntimeEnv): Promise<LiveApiRe
     ? toLivePreviewImage(session, session.currentState.latestPreview)
     : null;
   const hasExposureThumbnail = exposureImages.some((image) => Boolean(image.thumbnailUrl));
+  const hasConnected = Boolean(session.currentState);
 
   return {
     session,
@@ -282,18 +385,19 @@ export async function getLiveApiResponse(env: SiteRuntimeEnv): Promise<LiveApiRe
     mount: session.currentState?.mount ?? null,
     weather: session.currentState?.weather ?? null,
     stale: session.stale,
-    hasConnected: true,
+    hasConnected,
   };
 }
 
 function buildSessionUpsert(env: SiteRuntimeEnv, session: IngestSessionPayload) {
-  const exposureCount = session.exposures.length;
-  const totalExposureSeconds = session.exposures.reduce(
+  const validExposures = session.exposures.filter((exposure) => exposure.detectedStars !== null);
+  const exposureCount = validExposures.length;
+  const totalExposureSeconds = validExposures.reduce(
     (total, exposure) => total + (exposure.durationSeconds ?? 0),
     0,
   );
   const latestExposureId =
-    [...session.exposures]
+    [...validExposures]
       .sort((left, right) => right.startedAt.localeCompare(left.startedAt))[0]?.exposureId ?? null;
   const heroExposureId = latestExposureId;
 
@@ -326,8 +430,8 @@ function buildSessionUpsert(env: SiteRuntimeEnv, session: IngestSessionPayload) 
         current_state_payload = excluded.current_state_payload,
         latest_exposure_id = COALESCE(excluded.latest_exposure_id, sessions.latest_exposure_id),
         hero_exposure_id = COALESCE(excluded.hero_exposure_id, sessions.hero_exposure_id),
-        exposure_count = MAX(sessions.exposure_count, excluded.exposure_count),
-        total_exposure_seconds = MAX(sessions.total_exposure_seconds, excluded.total_exposure_seconds),
+        exposure_count = excluded.exposure_count,
+        total_exposure_seconds = excluded.total_exposure_seconds,
         updated_at = excluded.updated_at
     `,
   ).bind(

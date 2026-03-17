@@ -59,7 +59,8 @@ export function useOverlaySession(
         const advancedData = payload?.advanced ?? null;
         const mountData = payload?.mount ?? null;
         const weatherData = payload?.weather ?? null;
-        const offline = payload?.stale ?? true;
+        const hasConnected = payload?.hasConnected ?? false;
+        const offline = (payload?.stale ?? true) || !hasConnected;
 
         failureCountRef.current = 0;
         setConnectionOffline(offline);
@@ -67,7 +68,7 @@ export function useOverlaySession(
         setAdvancedStatus(advancedData);
         setMountInfo(mountData);
         setWeatherInfo(weatherData);
-        setHasConnected(payload?.hasConnected ?? false);
+        setHasConnected(hasConnected);
 
         if (loggedFailureRef.current) {
           console.info("Overlay session recovered after fetch failures.");

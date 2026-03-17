@@ -142,7 +142,7 @@ export function buildLivePreview(
   latestImage: NinaImageHistoryEntry | null,
   generatedAsset: GeneratedAsset,
 ): SessionLivePreview {
-  const capturedAt = normalizeTimestamp(latestImage?.startTime) ?? new Date().toISOString();
+  const capturedAt = normalizeTimestamp(latestImage?.startTime);
 
   return {
     assetKey: `sessions/${sessionKey}/live-preview/latest.jpg`,

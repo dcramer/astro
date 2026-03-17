@@ -1,11 +1,13 @@
 ---
 import { env } from "cloudflare:workers";
 
+import FilterSwatch from "@/components/site/FilterSwatch.astro";
 import LocalTime from "@/components/site/LocalTime.astro";
 import PublicHeader from "@/components/site/PublicHeader.astro";
 import SiteLayout from "@/layouts/SiteLayout.astro";
 import { getSessionByKey, getSessionExposures } from "@/lib/db";
-import { formatDuration } from "@nina/format";
+import { getSessionStatusLabel, getSessionStatusTone, isSessionOnline } from "@/lib/session-status";
+import { formatDuration, formatNumber } from "@nina/format";
 
 const sessionKey = Astro.params.key ? decodeURIComponent(Astro.params.key) : "";
 const session = sessionKey ? await getSessionByKey(env, sessionKey) : null;
@@ -23,6 +25,31 @@ const filterGroups = exposures.reduce<Record<string, { count: number; total: num
   accumulator[key] = existing;
   return accumulator;
 }, {});
+const buildAssetUrl = (assetKey: string | null) =>
+  assetKey
+    ? `/api/assets/${assetKey.split("/").map(encodeURIComponent).join("/")}`
+    : null;
+const exposureCards = exposures.map((exposure) => ({
+  exposure,
+  thumbnailUrl: buildAssetUrl(exposure.thumbnailKey),
+  hfrText: exposure.hfr !== null ? formatNumber(exposure.hfr, 2) : "—",
+  starsText: exposure.detectedStars !== null ? String(exposure.detectedStars) : "—",
+  rmsText:
+    exposure.guidingRmsArcSec !== null ? formatNumber(exposure.guidingRmsArcSec, 2) : "—",
+  title: exposure.targetName ?? exposure.fileName ?? "Exposure",
+}));
+const sessionTargetTitle =
+  session?.currentState?.currentTarget?.name ??
+  (session?.targetNames.length ? session.targetNames.join(" / ") : session?.primaryTargetName) ??
+  "No target";
+const sessionStatusLabel = getSessionStatusLabel(session);
+const sessionStatusTone = getSessionStatusTone(session);
+const sessionOnline = isSessionOnline(session);
+const sessionStatusDotClass = sessionStatusTone === "online"
+  ? "bg-emerald-400 shadow-[0_0_14px_rgba(52,211,153,0.5)]"
+  : sessionStatusTone === "offline"
+    ? "bg-rose-400 shadow-[0_0_14px_rgba(251,113,133,0.4)]"
+    : "bg-white/30";
 ---
 
 <SiteLayout
@@ -41,22 +68,23 @@ const filterGroups = exposures.reduce<Record<string, { count: number; total: num
             </h1>
           </div>
           <a href="/sessions" class="shrink-0 text-sm text-ink-soft transition-colors hover:text-ink-strong">
-            Back to archive
+            Back to history
           </a>
         </section>
 
-        <section class="mb-7 grid gap-5 xl:grid-cols-[minmax(0,1.5fr)_minmax(18rem,0.9fr)]">
+        <section class="mb-7 grid gap-5 lg:grid-cols-[minmax(0,1.5fr)_minmax(18rem,0.9fr)]">
           <article class="rounded-[18px] border border-line-soft bg-[image:var(--background-image-panel-surface)] px-6 py-6 shadow-[0_24px_80px_rgba(0,0,0,0.24)] sm:px-7 sm:py-7">
             <div
               class:list={[
-                "inline-flex items-center rounded-full border px-2.5 py-1 font-mono text-[0.65rem] uppercase tracking-[0.16em]",
-                session.stale ? "border-white/10 text-ink-soft" : "border-white/20 text-ink-muted",
+                "inline-flex items-center gap-2 rounded-full border px-2.5 py-1 font-mono text-[0.65rem] uppercase tracking-[0.16em]",
+                sessionOnline ? "border-white/20 text-live-soft" : "border-white/10 text-ink-soft",
               ]}
             >
-              {session.activeSession && !session.stale ? "Live" : session.endedAt ? "Completed" : "Stale"}
+              <span class:list={["h-2 w-2 rounded-full", sessionStatusDotClass]} />
+              {sessionStatusLabel}
             </div>
             <h2 class="mt-4 text-[2rem] font-medium tracking-[-0.045em] text-ink-strong">
-              {session.currentState?.currentTarget?.name ?? "No target"}
+              {sessionTargetTitle}
             </h2>
             <p class="mt-3 text-[0.96rem] leading-7 text-ink-muted">
               Started <LocalTime value={session.startedAt} format="date-time" />
@@ -78,12 +106,6 @@ const filterGroups = exposures.reduce<Record<string, { count: number; total: num
                 <div class="font-mono text-[0.68rem] uppercase tracking-[0.18em] text-ink-soft">Profile</div>
                 <div class="mt-2 text-[1.05rem] font-medium text-ink-strong">{session.profileName ?? "—"}</div>
               </div>
-              <div class="rounded-[16px] border border-line-soft bg-white/[0.015] px-4 py-3">
-                <div class="font-mono text-[0.68rem] uppercase tracking-[0.18em] text-ink-soft">Updated</div>
-                <div class="mt-2 text-[1.05rem] font-medium text-ink-strong">
-                  <LocalTime value={session.lastSeenAt} format="time" />
-                </div>
-              </div>
             </div>
           </article>
 
@@ -93,7 +115,10 @@ const filterGroups = exposures.reduce<Record<string, { count: number; total: num
               <div class="mt-5 grid gap-3">
                 {Object.entries(filterGroups).length ? Object.entries(filterGroups).map(([filter, group]) => (
                   <div class="flex items-baseline justify-between gap-3 border-t border-line-soft pt-3 first:border-t-0 first:pt-0">
-                    <span class="text-[0.98rem] text-ink-strong">{filter}</span>
+                    <FilterSwatch
+                      filterName={filter === "Unfiltered" ? null : filter}
+                      class="text-[0.98rem] text-ink-strong"
+                    />
                     <span class="text-sm text-ink-muted">
                       {group.count} · {formatDuration(group.total)}
                     </span>
@@ -104,16 +129,32 @@ const filterGroups = exposures.reduce<Record<string, { count: number; total: num
           </aside>
         </section>
 
-        {exposures.length ? (
+        {exposureCards.length ? (
           <section class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-            {exposures.map((exposure) => (
+            {exposureCards.map(({ exposure, thumbnailUrl, hfrText, starsText, rmsText, title }) => (
               <article class="overflow-hidden rounded-[18px] border border-line-soft bg-[image:var(--background-image-panel-surface)] shadow-[0_24px_80px_rgba(0,0,0,0.18)]">
-                {exposure.thumbnailKey ? (
-                  <img
-                    src={`/api/assets/${exposure.thumbnailKey.split("/").map(encodeURIComponent).join("/")}`}
-                    alt={exposure.targetName ?? exposure.fileName ?? "Exposure thumbnail"}
-                    class="aspect-[4/3] w-full object-cover"
-                  />
+                {thumbnailUrl ? (
+                  <button
+                    type="button"
+                    data-lightbox-src={thumbnailUrl}
+                    data-lightbox-label="Sub"
+                    data-lightbox-title={title}
+                    data-lightbox-time={exposure.startedAt}
+                    data-lightbox-filter={exposure.filterName ?? "—"}
+                    data-lightbox-duration={formatDuration(exposure.durationSeconds)}
+                    data-lightbox-hfr={hfrText}
+                    data-lightbox-stars={starsText}
+                    data-lightbox-rms={rmsText}
+                    data-lightbox-alt={title}
+                    class="block w-full cursor-zoom-in text-left transition-transform hover:scale-[1.002]"
+                    aria-label="Expand exposure thumbnail"
+                  >
+                    <img
+                      src={thumbnailUrl}
+                      alt={title}
+                      class="aspect-[4/3] w-full object-cover"
+                    />
+                  </button>
                 ) : (
                   <div class="flex aspect-[4/3] items-center justify-center border-b border-line-soft bg-white/[0.015] font-mono text-[0.68rem] uppercase tracking-[0.18em] text-ink-soft">
                     No thumbnail
@@ -122,7 +163,7 @@ const filterGroups = exposures.reduce<Record<string, { count: number; total: num
                 <div class="flex flex-col gap-5 px-5 py-5">
                   <div>
                     <div class="text-[1rem] font-medium text-ink-strong">
-                      {exposure.targetName ?? exposure.fileName ?? "Exposure"}
+                      {title}
                     </div>
                     <div class="mt-1 text-sm text-ink-muted">
                       <LocalTime value={exposure.startedAt} format="date-time-short" />
@@ -131,7 +172,11 @@ const filterGroups = exposures.reduce<Record<string, { count: number; total: num
                   <div class="grid grid-cols-2 gap-x-4 gap-y-5">
                     <div class="grid gap-2">
                       <span class="font-mono text-[0.68rem] uppercase tracking-[0.18em] text-ink-soft">Filter</span>
-                      <span class="text-[0.98rem] text-ink-muted">{exposure.filterName ?? "—"}</span>
+                      <FilterSwatch
+                        filterName={exposure.filterName}
+                        class="text-[0.98rem] text-ink-muted"
+                        fallbackLabel="—"
+                      />
                     </div>
                     <div class="grid gap-2">
                       <span class="font-mono text-[0.68rem] uppercase tracking-[0.18em] text-ink-soft">Duration</span>
@@ -139,11 +184,11 @@ const filterGroups = exposures.reduce<Record<string, { count: number; total: num
                     </div>
                     <div class="grid gap-2">
                       <span class="font-mono text-[0.68rem] uppercase tracking-[0.18em] text-ink-soft">HFR</span>
-                      <span class="text-[0.98rem] text-ink-muted">{exposure.hfr ?? "—"}</span>
+                      <span class="text-[0.98rem] text-ink-muted">{hfrText}</span>
                     </div>
                     <div class="grid gap-2">
                       <span class="font-mono text-[0.68rem] uppercase tracking-[0.18em] text-ink-soft">Stars</span>
-                      <span class="text-[0.98rem] text-ink-muted">{exposure.detectedStars ?? "—"}</span>
+                      <span class="text-[0.98rem] text-ink-muted">{starsText}</span>
                     </div>
                   </div>
                 </div>

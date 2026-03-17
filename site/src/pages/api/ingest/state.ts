@@ -61,7 +61,7 @@ const stateSchema = z.object({
             .object({
               assetKey: z.string(),
               contentType: z.string(),
-              capturedAt: z.string(),
+              capturedAt: z.string().nullable(),
               imageType: z.string().nullable(),
               targetName: z.string().nullable(),
               filterName: z.string().nullable(),

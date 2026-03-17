@@ -1,0 +1,237 @@
+<dialog
+  id="site-image-lightbox"
+  class="h-screen w-screen max-w-none border-none bg-black/92 p-4 text-white backdrop:bg-black/92 md:p-8"
+  aria-label="Expanded image"
+>
+  <div class="mx-auto flex h-full max-w-7xl flex-col">
+    <div class="flex justify-end">
+      <button
+        type="button"
+        data-lightbox-close
+        class="inline-flex items-center rounded-full border border-white/14 px-3 py-1.5 font-mono text-[0.68rem] uppercase tracking-[0.18em] text-white/82 transition-colors hover:text-white"
+      >
+        Close
+      </button>
+    </div>
+
+    <div class="flex min-h-0 flex-1 items-center justify-center py-4">
+      <img
+        data-lightbox-image
+        src=""
+        alt=""
+        class="max-h-full max-w-full rounded-[14px] object-contain shadow-[0_24px_80px_rgba(0,0,0,0.45)]"
+      />
+    </div>
+
+    <div
+      data-lightbox-footer
+      hidden
+      class="mt-2 rounded-[18px] border border-white/10 bg-white/6 px-4 py-4 backdrop-blur md:px-5"
+    >
+      <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <div class="min-w-0">
+          <div
+            data-lightbox-label
+            hidden
+            class="font-mono text-[0.58rem] uppercase tracking-[0.24em] text-white/52"
+          ></div>
+          <div data-lightbox-title hidden class="mt-1 text-[1.02rem] font-medium text-white"></div>
+          <div data-lightbox-subtitle hidden class="mt-1 text-sm text-white/68"></div>
+        </div>
+
+        <dl
+          data-lightbox-stats
+          hidden
+          class="grid grid-cols-2 gap-x-5 gap-y-3 md:min-w-[24rem] md:grid-cols-5"
+        >
+          <div data-lightbox-stat="filter">
+            <dt class="font-mono text-[0.56rem] uppercase tracking-[0.2em] text-white/48">Filter</dt>
+            <dd data-lightbox-stat-value class="mt-1 text-sm text-white/82"></dd>
+          </div>
+          <div data-lightbox-stat="duration">
+            <dt class="font-mono text-[0.56rem] uppercase tracking-[0.2em] text-white/48">Duration</dt>
+            <dd data-lightbox-stat-value class="mt-1 text-sm text-white/82"></dd>
+          </div>
+          <div data-lightbox-stat="hfr">
+            <dt class="font-mono text-[0.56rem] uppercase tracking-[0.2em] text-white/48">HFR</dt>
+            <dd data-lightbox-stat-value class="mt-1 text-sm text-white/82"></dd>
+          </div>
+          <div data-lightbox-stat="stars">
+            <dt class="font-mono text-[0.56rem] uppercase tracking-[0.2em] text-white/48">Stars</dt>
+            <dd data-lightbox-stat-value class="mt-1 text-sm text-white/82"></dd>
+          </div>
+          <div data-lightbox-stat="rms">
+            <dt class="font-mono text-[0.56rem] uppercase tracking-[0.2em] text-white/48">Guide RMS</dt>
+            <dd data-lightbox-stat-value class="mt-1 text-sm text-white/82"></dd>
+          </div>
+        </dl>
+      </div>
+    </div>
+  </div>
+</dialog>
+
+<script is:inline>
+  (() => {
+    const dialog = document.getElementById("site-image-lightbox");
+    if (!(dialog instanceof HTMLDialogElement) || dialog.dataset.initialized === "true") {
+      return;
+    }
+
+    dialog.dataset.initialized = "true";
+
+    const image = dialog.querySelector("[data-lightbox-image]");
+    const footer = dialog.querySelector("[data-lightbox-footer]");
+    const label = dialog.querySelector("[data-lightbox-label]");
+    const title = dialog.querySelector("[data-lightbox-title]");
+    const subtitle = dialog.querySelector("[data-lightbox-subtitle]");
+    const stats = dialog.querySelector("[data-lightbox-stats]");
+    const statItems = Array.from(dialog.querySelectorAll("[data-lightbox-stat]"));
+    const dateTimeFormatter = new Intl.DateTimeFormat(undefined, {
+      dateStyle: "medium",
+      timeStyle: "short",
+    });
+
+    if (
+      !(image instanceof HTMLImageElement) ||
+      !(footer instanceof HTMLElement) ||
+      !(label instanceof HTMLElement) ||
+      !(title instanceof HTMLElement) ||
+      !(subtitle instanceof HTMLElement) ||
+      !(stats instanceof HTMLElement)
+    ) {
+      return;
+    }
+
+    const setElementText = (element, value) => {
+      element.textContent = value;
+      element.hidden = !value;
+    };
+
+    const formatTime = (value) => {
+      if (!value) {
+        return "";
+      }
+
+      const parsed = new Date(value);
+      if (Number.isNaN(parsed.getTime())) {
+        return "";
+      }
+
+      return dateTimeFormatter.format(parsed);
+    };
+
+    const closeDialog = () => {
+      if (dialog.open) {
+        dialog.close();
+      }
+    };
+
+    const openDialog = (trigger, source) => {
+      const titleText =
+        trigger.getAttribute("data-lightbox-title") ||
+        trigger.getAttribute("data-lightbox-alt") ||
+        trigger.getAttribute("aria-label") ||
+        "";
+      const subtitleText =
+        formatTime(trigger.getAttribute("data-lightbox-time")) ||
+        trigger.getAttribute("data-lightbox-subtitle") ||
+        "";
+      const labelText = trigger.getAttribute("data-lightbox-label") || "";
+      const statValues = {
+        filter: trigger.getAttribute("data-lightbox-filter"),
+        duration: trigger.getAttribute("data-lightbox-duration"),
+        hfr: trigger.getAttribute("data-lightbox-hfr"),
+        stars: trigger.getAttribute("data-lightbox-stars"),
+        rms: trigger.getAttribute("data-lightbox-rms"),
+      };
+      const hasStats = Object.values(statValues).some((value) => Boolean(value));
+
+      image.src = source;
+      image.alt = titleText || "Expanded image";
+
+      setElementText(label, labelText);
+      setElementText(title, titleText);
+      setElementText(subtitle, subtitleText);
+
+      stats.hidden = !hasStats;
+      for (const statItem of statItems) {
+        if (!(statItem instanceof HTMLElement)) {
+          continue;
+        }
+
+        const key = statItem.getAttribute("data-lightbox-stat");
+        const valueNode = statItem.querySelector("[data-lightbox-stat-value]");
+        if (!key || !(valueNode instanceof HTMLElement)) {
+          continue;
+        }
+
+        const value = statValues[key] || "";
+        valueNode.textContent = value;
+        statItem.hidden = !value;
+      }
+
+      footer.hidden = !(labelText || titleText || subtitleText || hasStats);
+
+      if (!dialog.open) {
+        dialog.showModal();
+      }
+    };
+
+    document.addEventListener("click", (event) => {
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        return;
+      }
+
+      const closeTrigger = target.closest("[data-lightbox-close]");
+      if (closeTrigger) {
+        event.preventDefault();
+        closeDialog();
+        return;
+      }
+
+      const trigger = target.closest("[data-lightbox-src]");
+      if (!(trigger instanceof HTMLElement)) {
+        return;
+      }
+
+      const source = trigger.getAttribute("data-lightbox-src");
+      if (!source) {
+        return;
+      }
+
+      event.preventDefault();
+      openDialog(trigger, source);
+    });
+
+    dialog.addEventListener("click", (event) => {
+      if (event.target === dialog) {
+        closeDialog();
+      }
+    });
+
+    dialog.addEventListener("close", () => {
+      image.removeAttribute("src");
+      image.alt = "";
+      footer.hidden = true;
+      label.textContent = "";
+      label.hidden = true;
+      title.textContent = "";
+      title.hidden = true;
+      subtitle.textContent = "";
+      subtitle.hidden = true;
+      stats.hidden = true;
+      for (const statItem of statItems) {
+        if (!(statItem instanceof HTMLElement)) {
+          continue;
+        }
+
+        const valueNode = statItem.querySelector("[data-lightbox-stat-value]");
+        if (valueNode instanceof HTMLElement) {
+          valueNode.textContent = "";
+        }
+        statItem.hidden = false;
+      }
+    });
+  })();
+</script>

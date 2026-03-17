@@ -1,4 +1,4 @@
-export type LocalTimeFormat = "time" | "date-time" | "date-time-short";
+export type LocalTimeFormat = "time" | "date-time" | "date-time-short" | "month-day";
 
 export function normalizeTimestamp(value: string | number | Date | null | undefined): string | null {
   if (value === null || value === undefined) {
@@ -26,6 +26,11 @@ function getDateTimeFormatter(format: LocalTimeFormat): Intl.DateTimeFormat {
         day: "numeric",
         hour: "numeric",
         minute: "2-digit",
+      });
+    case "month-day":
+      return new Intl.DateTimeFormat("en-US", {
+        month: "short",
+        day: "numeric",
       });
     case "date-time":
     default:

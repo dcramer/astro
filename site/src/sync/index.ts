@@ -1,5 +1,6 @@
 import "dotenv/config";
 
+import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
@@ -38,6 +39,7 @@ interface SyncState {
   readonly knownSessions: ReadonlyArray<string>;
   readonly uploadedThumbnailKeys: ReadonlyArray<string>;
   readonly lastActiveSessionKey: string | null;
+  readonly lastLivePreviewSignature: string | null;
 }
 
 interface ThumbnailAssetPayload {
@@ -54,6 +56,38 @@ interface AssetUploadSummary {
 interface SyncRunResult {
   readonly state: SyncState;
   readonly summary: string;
+}
+
+function getLatestTimestamp(values: ReadonlyArray<string | null | undefined>): string | null {
+  let latest: string | null = null;
+  let latestMs = Number.NEGATIVE_INFINITY;
+
+  for (const value of values) {
+    if (!value) {
+      continue;
+    }
+
+    const normalized = normalizeTimestamp(value);
+    if (!normalized) {
+      continue;
+    }
+
+    const timestamp = new Date(normalized).getTime();
+    if (!Number.isFinite(timestamp)) {
+      continue;
+    }
+
+    if (timestamp > latestMs) {
+      latestMs = timestamp;
+      latest = normalized;
+    }
+  }
+
+  return latest;
+}
+
+function buildLivePreviewSignature(assetKey: string, bodyBase64: string): string {
+  return `${assetKey}:${createHash("sha1").update(bodyBase64).digest("hex")}`;
 }
 
 const DEFAULT_SYNC_INTERVAL_MS = 30_000;
@@ -74,6 +108,7 @@ async function loadState(): Promise<SyncState> {
       knownSessions: parsed.knownSessions ?? [],
       uploadedThumbnailKeys: parsed.uploadedThumbnailKeys ?? [],
       lastActiveSessionKey: parsed.lastActiveSessionKey ?? null,
+      lastLivePreviewSignature: parsed.lastLivePreviewSignature ?? null,
     };
   } catch {
     return {
@@ -81,6 +116,7 @@ async function loadState(): Promise<SyncState> {
       knownSessions: [],
       uploadedThumbnailKeys: [],
       lastActiveSessionKey: null,
+      lastLivePreviewSignature: null,
     };
   }
 }
@@ -176,10 +212,43 @@ function buildExposurePayload(
   };
 }
 
+function getLatestExposureStartedAt(
+  exposures: ReadonlyArray<IngestExposurePayload>,
+  options?: { requireDetectedStars?: boolean },
+): string | null {
+  const candidates = options?.requireDetectedStars
+    ? exposures.filter((exposure) => exposure.detectedStars !== null)
+    : exposures;
+
+  return getLatestTimestamp(candidates.map((exposure) => exposure.startedAt));
+}
+
+function getSessionLastSeenAt(input: {
+  history: NinaSessionHistory;
+  exposures: ReadonlyArray<IngestExposurePayload>;
+  syncedAt: string;
+  currentState: SessionCurrentState | null;
+}): string {
+  const latestValidExposureStartedAt = getLatestExposureStartedAt(input.exposures, {
+    requireDetectedStars: true,
+  });
+  const latestPreviewCapturedAt = input.currentState?.latestPreview?.capturedAt ?? null;
+  const latestRecordedActivityAt = getLatestTimestamp([
+    latestValidExposureStartedAt,
+    latestPreviewCapturedAt,
+  ]);
+
+  if (input.currentState?.advanced?.camera?.isExposing) {
+    return input.syncedAt;
+  }
+
+  return latestRecordedActivityAt ?? normalizeTimestamp(input.history.startTime) ?? input.syncedAt;
+}
+
 function buildSessionPayload(
   summary: NinaSessionSummary,
   history: NinaSessionHistory,
-  lastSeenAt: string,
+  syncedAt: string,
   currentState: SessionCurrentState | null,
 ): IngestSessionPayload {
   const exposures =
@@ -193,9 +262,13 @@ function buildSessionPayload(
       ),
     ) ?? [];
 
-  const latestExposureStartedAt =
-    [...exposures].sort((left, right) => right.startedAt.localeCompare(left.startedAt))[0]?.startedAt ??
-    null;
+  const latestExposureStartedAt = getLatestExposureStartedAt(exposures);
+  const lastSeenAt = getSessionLastSeenAt({
+    history,
+    exposures,
+    syncedAt,
+    currentState,
+  });
 
   return {
     sessionKey: summary.key,
@@ -419,6 +492,10 @@ async function uploadMissingAssets(
 
   for (const session of sessions) {
     for (const exposure of session.exposures) {
+      if (exposure.detectedStars === null) {
+        continue;
+      }
+
       if (!exposure.thumbnailKey || uploaded.has(exposure.thumbnailKey)) {
         continue;
       }
@@ -465,7 +542,7 @@ async function syncOnce(previousState: SyncState): Promise<SyncRunResult> {
   if (!ninaBaseUrl) {
     throw new Error("Invalid NINA session base URL.");
   }
-  const lastSeenAt = new Date().toISOString();
+  const syncedAt = new Date().toISOString();
 
   const [sessionList, overlaySession, advancedStatus, imageHistory, mountInfo, weatherInfo] = await Promise.all([
     fetchSessionList(ninaBaseUrl),
@@ -492,6 +569,10 @@ async function syncOnce(previousState: SyncState): Promise<SyncRunResult> {
   const livePreview = activeSessionKey && livePreviewAsset
     ? buildLivePreview(activeSessionKey, latestImage, livePreviewAsset)
     : null;
+  const livePreviewSignature =
+    livePreview && livePreviewAsset
+      ? buildLivePreviewSignature(livePreview.assetKey, livePreviewAsset.bodyBase64)
+      : null;
   const sessionHistories = new Map<string, NinaSessionHistory>();
 
   const sessions: IngestSessionPayload[] = [];
@@ -510,7 +591,7 @@ async function syncOnce(previousState: SyncState): Promise<SyncRunResult> {
     const currentState: SessionCurrentState | null =
       sessionKey === activeSessionKey
         ? {
-            syncedAt: lastSeenAt,
+            syncedAt,
             advanced: advancedStatus,
             mount: mountInfo,
             weather: weatherInfo,
@@ -523,7 +604,7 @@ async function syncOnce(previousState: SyncState): Promise<SyncRunResult> {
       buildSessionPayload(
         summary,
         history,
-        lastSeenAt,
+        syncedAt,
         currentState,
       ),
     );
@@ -537,11 +618,15 @@ async function syncOnce(previousState: SyncState): Promise<SyncRunResult> {
   }
 
   const payload: IngestStatePayload = {
-    syncedAt: lastSeenAt,
+    syncedAt,
     sessions,
   };
 
-  if (livePreview && livePreviewAsset) {
+  const shouldUploadLivePreview =
+    Boolean(livePreview && livePreviewAsset) &&
+    livePreviewSignature !== previousState.lastLivePreviewSignature;
+
+  if (livePreview && livePreviewAsset && shouldUploadLivePreview) {
     await uploadAsset(syncApiBaseUrl, secret, {
       assetKey: livePreview.assetKey,
       contentType: livePreviewAsset.contentType,
@@ -559,16 +644,25 @@ async function syncOnce(previousState: SyncState): Promise<SyncRunResult> {
     knownSessions: Array.from(new Set([...previousState.knownSessions, ...sessions.map((session) => session.sessionKey)])),
     uploadedThumbnailKeys: previousState.uploadedThumbnailKeys,
     lastActiveSessionKey: activeSessionKey,
+    lastLivePreviewSignature:
+      livePreview && livePreviewAsset
+        ? livePreviewSignature
+        : null,
   });
 
-  const exposureCount = sessions.reduce((total, session) => total + session.exposures.length, 0);
-  const activeSessionExposureCount =
+  const validExposureCount = sessions.reduce(
+    (total, session) => total + session.exposures.filter((exposure) => exposure.detectedStars !== null).length,
+    0,
+  );
+  const activeSessionValidExposureCount =
     activeSessionKey
-      ? sessions.find((session) => session.sessionKey === activeSessionKey)?.exposures.length ?? 0
+      ? sessions
+          .find((session) => session.sessionKey === activeSessionKey)
+          ?.exposures.filter((exposure) => exposure.detectedStars !== null).length ?? 0
       : 0;
   const summaryParts = [
     `${sessions.length} sessions`,
-    `${exposureCount} exposures`,
+    `${validExposureCount} valid exposures`,
     `${assetSummary.uploadedExposureAssets} exposure thumbnails uploaded`,
   ];
 
@@ -576,14 +670,16 @@ async function syncOnce(previousState: SyncState): Promise<SyncRunResult> {
     summaryParts.push(`${assetSummary.skippedExposureAssets} exposure thumbnails still missing`);
   }
 
-  if (livePreview) {
+  if (livePreview && shouldUploadLivePreview) {
     summaryParts.push("live preview uploaded");
+  } else if (livePreview) {
+    summaryParts.push("live preview unchanged");
   } else if (activeSessionKey) {
     summaryParts.push("no live preview available");
   }
 
-  if (activeSessionKey && activeSessionExposureCount === 0) {
-    summaryParts.push("active session has no archived imageRecords yet");
+  if (activeSessionKey && activeSessionValidExposureCount === 0) {
+    summaryParts.push("active session has no valid archived subs yet");
   }
 
   return {

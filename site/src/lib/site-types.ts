@@ -15,7 +15,7 @@ export interface CurrentTargetSnapshot {
 export interface SessionLivePreview {
   assetKey: string;
   contentType: string;
-  capturedAt: string;
+  capturedAt: string | null;
   imageType: string | null;
   targetName: string | null;
   filterName: string | null;
@@ -38,6 +38,9 @@ export interface StoredSession {
   startedAt: string;
   endedAt: string | null;
   profileName: string | null;
+  primaryTargetName: string | null;
+  targetNames: ReadonlyArray<string>;
+  filterNames: ReadonlyArray<string>;
   activeSession: boolean;
   sessionStatus: string | null;
   lastSeenAt: string;
@@ -45,6 +48,7 @@ export interface StoredSession {
   totalExposureSeconds: number;
   latestExposureId: string | null;
   heroExposureId: string | null;
+  heroThumbnailUrl: string | null;
   stale: boolean;
   currentState: SessionCurrentState | null;
 }

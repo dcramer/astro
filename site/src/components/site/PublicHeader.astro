@@ -1,9 +1,26 @@
-<header class="mb-10 border-b border-line-soft pb-5">
+---
+const pathname = Astro.url.pathname;
+const historyActive = pathname === "/sessions" || pathname.startsWith("/sessions/");
+---
+
+<header class="mb-8 flex items-center justify-between gap-4 border-b border-line-soft pb-4 sm:mb-10 sm:pb-5">
   <a
     href="/"
-    class="inline-flex items-center font-mono text-[0.72rem] uppercase tracking-[0.18em] text-ink-soft transition-colors hover:text-ink-strong"
+    class="inline-flex items-center font-mono text-[0.72rem] uppercase tracking-[0.22em] text-ink-strong transition-colors hover:text-live-soft"
     aria-label="astro.cra.mr home"
   >
     astro.cra.mr
   </a>
+
+  <nav class="flex items-center gap-4">
+    <a
+      href="/sessions"
+      class:list={[
+        "font-mono text-[0.68rem] uppercase tracking-[0.2em] transition-colors",
+        historyActive ? "text-live-soft" : "text-ink-soft hover:text-ink-strong",
+      ]}
+    >
+      Session History
+    </a>
+  </nav>
 </header>

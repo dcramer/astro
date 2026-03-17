@@ -1,0 +1,39 @@
+---
+import { getFilterColor } from "@/components/overlay/utils/filters";
+
+interface Props {
+  filterName?: string | null;
+  showLabel?: boolean;
+  class?: string;
+  squareClass?: string;
+  labelClass?: string;
+  fallbackLabel?: string;
+}
+
+const {
+  filterName = null,
+  showLabel = true,
+  class: className = "",
+  squareClass = "",
+  labelClass = "",
+  fallbackLabel = "Unfiltered",
+} = Astro.props as Props;
+
+const label = filterName?.trim() || fallbackLabel;
+const color = getFilterColor(filterName);
+const swatchStyle = color
+  ? `background:${color}; box-shadow: 0 0 20px ${color}66, inset 0 0 0 1px rgba(255,255,255,0.08);`
+  : undefined;
+---
+
+<span class:list={["inline-flex items-center gap-2", className]}>
+  <span
+    class:list={[
+      "h-2.5 w-2.5 shrink-0 rounded-[3px] border border-white/14 bg-white/8",
+      squareClass,
+    ]}
+    style={swatchStyle}
+    aria-hidden="true"
+  />
+  {showLabel ? <span class:list={["text-inherit", labelClass]}>{label}</span> : null}
+</span>
