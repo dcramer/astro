@@ -35,16 +35,18 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.8",
+    "@cloudflare/vite-plugin": "1.29.1",
     "@cloudflare/workers-types": "^4.20260317.1",
     "@tailwindcss/vite": "4.2.1",
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "drizzle-kit": "^0.31.10",
+    "miniflare": "4.20260312.1",
     "tailwindcss": "4.2.1",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
-    "wrangler": "^4.74.0"
+    "wrangler": "^4.75.0"
   },
   "packageManager": "pnpm@10.14.0"
 }
