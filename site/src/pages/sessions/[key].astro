@@ -6,6 +6,7 @@ import LocalTime from "@/components/site/LocalTime.astro";
 import PublicHeader from "@/components/site/PublicHeader.astro";
 import SiteLayout from "@/layouts/SiteLayout.astro";
 import { getSessionByKey, getSessionExposures } from "@/lib/db";
+import { buildSessionPageMetadata } from "@/lib/page-metadata";
 import { getSessionStatusLabel, getSessionStatusTone, isSessionOnline } from "@/lib/session-status";
 import { formatDuration, formatNumber } from "@nina/format";
 
@@ -50,11 +51,17 @@ const sessionStatusDotClass = sessionStatusTone === "online"
   : sessionStatusTone === "offline"
     ? "bg-rose-400 shadow-[0_0_14px_rgba(251,113,133,0.4)]"
     : "bg-white/30";
+const pageMetadata = buildSessionPageMetadata(session);
 ---
 
 <SiteLayout
-  title={session ? `${session.displayName} · Session` : "Session not found"}
-  description="Session detail page."
+  title={pageMetadata.title}
+  description={pageMetadata.description}
+  imagePath={pageMetadata.imagePath}
+  imageAlt={pageMetadata.imageAlt}
+  ogType={pageMetadata.ogType}
+  publishedTime={pageMetadata.publishedTime}
+  modifiedTime={pageMetadata.modifiedTime}
 >
   <div class="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 pb-16 pt-8 sm:px-8 lg:px-12">
     <PublicHeader />

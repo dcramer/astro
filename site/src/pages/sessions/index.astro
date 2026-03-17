@@ -5,6 +5,7 @@ import PublicHeader from "@/components/site/PublicHeader.astro";
 import SessionArchiveRow from "@/components/site/SessionArchiveRow.astro";
 import SiteLayout from "@/layouts/SiteLayout.astro";
 import { getRecentSessions } from "@/lib/db";
+import { buildArchivePageMetadata } from "@/lib/page-metadata";
 import type { StoredSession } from "@/lib/site-types";
 import { formatDuration } from "@nina/format";
 
@@ -62,9 +63,18 @@ const groupedSessions = sessions.reduce<Array<{ key: string; label: string; sess
   },
   [],
 );
+const pageMetadata = buildArchivePageMetadata(sessions);
 ---
 
-<SiteLayout title="Session History" description="Archived astrophotography sessions.">
+<SiteLayout
+  title={pageMetadata.title}
+  description={pageMetadata.description}
+  imagePath={pageMetadata.imagePath}
+  imageAlt={pageMetadata.imageAlt}
+  ogType={pageMetadata.ogType}
+  publishedTime={pageMetadata.publishedTime}
+  modifiedTime={pageMetadata.modifiedTime}
+>
   <div class="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 pb-16 pt-8 sm:px-8 lg:px-12">
     <PublicHeader />
 

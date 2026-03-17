@@ -23,6 +23,7 @@ import LocalTime from "@/components/site/LocalTime.astro";
 import PublicHeader from "@/components/site/PublicHeader.astro";
 import SiteLayout from "@/layouts/SiteLayout.astro";
 import { getLiveApiResponse, getSessionExposures } from "@/lib/db";
+import { buildHomePageMetadata } from "@/lib/page-metadata";
 import { type SessionStatusTone } from "@/lib/session-status";
 import { formatDuration, formatNumber } from "@nina/format";
 
@@ -168,9 +169,18 @@ const filterBreakdown = Array.from(filterLabels).sort((left, right) => {
 
   return left.localeCompare(right);
 });
+const pageMetadata = buildHomePageMetadata(live);
 ---
 
-<SiteLayout title="astro.cra.mr" description="Current session and recent nights.">
+<SiteLayout
+  title={pageMetadata.title}
+  description={pageMetadata.description}
+  imagePath={pageMetadata.imagePath}
+  imageAlt={pageMetadata.imageAlt}
+  ogType={pageMetadata.ogType}
+  publishedTime={pageMetadata.publishedTime}
+  modifiedTime={pageMetadata.modifiedTime}
+>
   <div class="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 pb-16 pt-8 sm:px-8 lg:px-12">
     <PublicHeader />
 
