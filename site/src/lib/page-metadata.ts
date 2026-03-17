@@ -26,7 +26,9 @@ function getSessionTargetName(session: StoredSession | null): string | null {
   }
 
   return (
-    session.currentState?.currentTarget?.name ??
+    (session.currentState?.currentTarget?.source !== "mount"
+      ? session.currentState?.currentTarget?.name ?? null
+      : null) ??
     (session.targetNames.length ? session.targetNames.join(" / ") : null) ??
     session.primaryTargetName ??
     null
@@ -36,12 +38,6 @@ function getSessionTargetName(session: StoredSession | null): string | null {
 export function buildHomePageMetadata(live: LiveApiResponse): PageMetadata {
   const session = live.session;
   const targetName = getSessionTargetName(session);
-  const heroImage =
-    live.images.find((image) => image.detectedStars !== null && image.thumbnailUrl)?.thumbnailUrl ??
-    live.images.find((image) => image.thumbnailUrl)?.thumbnailUrl ??
-    session?.heroThumbnailUrl ??
-    null;
-  const imageAlt = targetName ? `${targetName} latest sub` : "Latest archived sub";
 
   if (!session) {
     return {
@@ -56,23 +52,35 @@ export function buildHomePageMetadata(live: LiveApiResponse): PageMetadata {
   }
 
   const sessionSummary = `${session.exposureCount} valid subs, ${formatIntegration(session.totalExposureSeconds)}.`;
-  const description = isSessionOnline(session)
-    ? targetName
-      ? `Online session for ${targetName}. ${sessionSummary}`
-      : `Online astrophotography session. ${sessionSummary}`
-    : session.activeSession
+  const liveImage =
+    live.liveMode === "active-pending"
+      ? null
+      : live.images.find((image) => image.detectedStars !== null && image.thumbnailUrl)?.thumbnailUrl ??
+        session.heroThumbnailUrl ??
+        null;
+  const imageAlt = targetName ? `${targetName} latest sub` : "Latest archived sub";
+  const description =
+    live.liveMode === "active-pending"
       ? targetName
-        ? `Offline session for ${targetName}. ${sessionSummary}`
-        : `Offline astrophotography session. ${sessionSummary}`
-      : targetName
-        ? `Recent session for ${targetName}. ${sessionSummary}`
-        : `Recent astrophotography session. ${sessionSummary}`;
+        ? `Active session for ${targetName}. Sequence is running and waiting for the first valid sub.`
+        : "Active astrophotography session. Sequence is running and waiting for the first valid sub."
+      : isSessionOnline(session)
+        ? targetName
+          ? `Online session for ${targetName}. ${sessionSummary}`
+          : `Online astrophotography session. ${sessionSummary}`
+        : session.activeSession
+          ? targetName
+            ? `Offline session for ${targetName}. ${sessionSummary}`
+            : `Offline astrophotography session. ${sessionSummary}`
+          : targetName
+            ? `Recent session for ${targetName}. ${sessionSummary}`
+            : `Recent astrophotography session. ${sessionSummary}`;
 
   return {
     title: SITE_NAME,
     description,
-    imagePath: heroImage,
-    imageAlt,
+    imagePath: liveImage,
+    imageAlt: liveImage ? imageAlt : null,
     ogType: "website",
     publishedTime: session.startedAt,
     modifiedTime: session.endedAt ?? session.lastSeenAt,

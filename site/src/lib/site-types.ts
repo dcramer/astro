@@ -84,6 +84,12 @@ export interface OverlayImage extends NinaImageHistoryEntry {
   thumbnailUrl: string | null;
 }
 
+export type LiveMode =
+  | "active-pending"
+  | "active-imaging"
+  | "recent-archive"
+  | "empty";
+
 export interface LiveApiResponse {
   session: StoredSession | null;
   images: ReadonlyArray<OverlayImage>;
@@ -92,6 +98,7 @@ export interface LiveApiResponse {
   weather: NinaWeatherInfo | null;
   stale: boolean;
   hasConnected: boolean;
+  liveMode: LiveMode;
 }
 
 export interface IngestExposurePayload {

@@ -32,11 +32,23 @@ const sessionExposures = live.session ? await getSessionExposures(env, live.sess
 const currentState = live.session?.currentState;
 const latestExposure = live.images[0] ?? null;
 const now = Date.now();
-const currentTarget =
-  currentState?.currentTarget?.name ??
+const currentTargetSnapshot = currentState?.currentTarget ?? null;
+const currentTargetBase =
+  (currentTargetSnapshot && currentTargetSnapshot.source !== "mount"
+    ? currentTargetSnapshot.name
+    : null) ??
   latestExposure?.targetName ??
   live.session?.primaryTargetName ??
+  currentTargetSnapshot?.name ??
   "No target";
+const currentTarget = live.liveMode === "active-pending" &&
+  (
+    currentTargetBase === "No target" ||
+    currentTargetBase === "Current pointing" ||
+    currentTargetSnapshot?.source === "mount"
+  )
+  ? "Startup Sequence"
+  : currentTargetBase;
 const isOnline = Boolean(live.session?.activeSession && !live.stale && live.hasConnected);
 const camera = isOnline ? live.advanced?.camera ?? null : null;
 const connectionOptions = {
@@ -85,7 +97,13 @@ const sequenceBreadcrumb = sequence?.breadcrumb?.length
   : [];
 const sequenceTrail = sequenceBreadcrumb.length ? sequenceBreadcrumb.join(" / ") : null;
 const latestDisplayExposure = live.images.find((image) => image.detectedStars !== null) ?? null;
-const latestExposureLabel = "Latest sub";
+const primaryDisplayImage = live.liveMode === "active-pending"
+  ? live.images.find((image) => Boolean(image.thumbnailUrl)) ?? null
+  : latestDisplayExposure;
+const primaryDisplayLabel = live.liveMode === "active-pending" ? "Current run" : "Latest sub";
+const primaryDisplayTitle = live.liveMode === "active-pending"
+  ? currentTarget
+  : latestDisplayExposure?.targetName ?? currentTarget;
 const cameraProgressPercent = cameraProgress ? Math.max(0, Math.min(100, Math.round(cameraProgress.percent * 100))) : null;
 const latestHfr = latestDisplayExposure?.hfr !== null && latestDisplayExposure?.hfr !== undefined
   ? formatNumber(latestDisplayExposure.hfr, 2)
@@ -106,10 +124,14 @@ const liveStatusLabel = !live.session
     : "Offline";
 const liveStatusDetail = !live.session
   ? "Waiting for the first valid sub."
-  : isOnline
-    ? "Current session is reporting new data."
-    : live.session.activeSession
-      ? "Current session is not reporting new data."
+  : live.liveMode === "active-pending"
+    ? isOnline
+      ? "Sequence is running; first valid sub has not completed yet."
+      : "Current session is not reporting new data; first valid sub has not completed yet."
+    : live.liveMode === "active-imaging"
+      ? isOnline
+        ? "Current session is reporting new data."
+        : "Current session is not reporting new data."
       : "Showing the most recent archived session.";
 const liveStatusDotClass = liveStatusTone === "online"
   ? "bg-emerald-400 shadow-[0_0_18px_rgba(52,211,153,0.55)]"
@@ -187,40 +209,50 @@ const pageMetadata = buildHomePageMetadata(live);
     <section class="pt-2">
       <div class="grid gap-7 lg:grid-cols-[minmax(18rem,21rem)_minmax(0,1fr)] lg:items-start">
           <div class="space-y-4 lg:sticky lg:top-8">
-            {latestDisplayExposure?.thumbnailUrl ? (
+            {primaryDisplayImage?.thumbnailUrl ? (
               <button
                 type="button"
-                data-lightbox-src={latestDisplayExposure.thumbnailUrl}
-                data-lightbox-label={latestExposureLabel}
-                data-lightbox-title={latestDisplayExposure.targetName ?? currentTarget}
-                data-lightbox-time={latestDisplayExposure.startTime}
-                data-lightbox-filter={latestDisplayExposure.filterName ?? "—"}
-                data-lightbox-duration={formatDuration(latestDisplayExposure.exposureDurationSeconds)}
-                data-lightbox-hfr={latestHfr}
-                data-lightbox-stars={latestStars}
-                data-lightbox-rms={latestGuideRms}
-                data-lightbox-alt={latestDisplayExposure.targetName ?? "Latest exposure"}
+                data-lightbox-src={primaryDisplayImage.thumbnailUrl}
+                data-lightbox-label={primaryDisplayLabel}
+                data-lightbox-title={primaryDisplayTitle}
+                data-lightbox-time={live.liveMode === "active-pending" ? live.session?.startedAt ?? "" : primaryDisplayImage.startTime}
+                data-lightbox-filter={live.liveMode === "active-pending" ? "" : primaryDisplayImage.filterName ?? ""}
+                data-lightbox-duration={live.liveMode === "active-pending" ? "" : formatDuration(primaryDisplayImage.exposureDurationSeconds)}
+                data-lightbox-hfr={live.liveMode === "active-pending" ? "" : latestHfr}
+                data-lightbox-stars={live.liveMode === "active-pending" ? "" : latestStars}
+                data-lightbox-rms={live.liveMode === "active-pending" ? "" : latestGuideRms}
+                data-lightbox-alt={primaryDisplayTitle}
                 class="block cursor-zoom-in overflow-hidden rounded-[20px] border border-line-soft bg-black text-left shadow-[0_20px_60px_rgba(0,0,0,0.34)] transition-transform hover:scale-[1.002]"
-                aria-label="Expand latest exposure"
+                aria-label={live.liveMode === "active-pending" ? "Expand current run preview" : "Expand latest exposure"}
               >
                 <img
-                  src={latestDisplayExposure.thumbnailUrl}
-                  alt={latestDisplayExposure.targetName ?? "Latest exposure"}
+                  src={primaryDisplayImage.thumbnailUrl}
+                  alt={primaryDisplayTitle}
                   class="aspect-[4/3] w-full object-cover"
                 />
               </button>
             ) : (
-              <div class="flex aspect-[4/3] items-center justify-center rounded-[20px] border border-dashed border-line-soft bg-black/30 font-mono text-[0.68rem] uppercase tracking-[0.2em] text-ink-soft">
-                Waiting for first real sub
+              <div class="flex aspect-[4/3] flex-col items-center justify-center rounded-[20px] border border-dashed border-line-soft bg-black/30 px-6 text-center">
+                <div class="font-mono text-[0.68rem] uppercase tracking-[0.2em] text-ink-soft">
+                  {live.liveMode === "active-pending" ? "Current run" : "Latest sub"}
+                </div>
+                <div class="mt-3 text-[1rem] font-medium tracking-[-0.02em] text-ink-strong">
+                  {live.liveMode === "active-pending" ? currentTarget : "Waiting for first real sub"}
+                </div>
+                <div class="mt-2 max-w-[16rem] text-[0.84rem] leading-6 text-ink-muted">
+                  {live.liveMode === "active-pending"
+                    ? (sequenceStatus !== "<Offline>" ? sequenceStatus : "Sequence is waiting for the first valid sub.")
+                    : "Waiting for the first valid sub."}
+                </div>
               </div>
             )}
 
             <section class="rounded-[18px] border border-line-soft bg-black/18 px-4 py-4">
               <div class="flex items-center justify-between gap-3">
                 <div class="font-mono text-[0.6rem] uppercase tracking-[0.24em] text-ink-soft">
-                  {latestExposureLabel}
+                  {primaryDisplayLabel}
                 </div>
-                {latestDisplayExposure ? (
+                {latestDisplayExposure && live.liveMode !== "active-pending" ? (
                   <FilterSwatch
                     filterName={latestDisplayExposure.filterName}
                     class="text-[0.74rem] text-ink-muted"
@@ -229,7 +261,41 @@ const pageMetadata = buildHomePageMetadata(live);
                 ) : null}
               </div>
 
-              {latestDisplayExposure ? (
+              {live.liveMode === "active-pending" ? (
+                <div class="mt-4 grid gap-4">
+                  <div>
+                    <div class="text-[1.08rem] font-medium tracking-[-0.02em] text-ink-strong">
+                      {currentTarget}
+                    </div>
+                    <div class="mt-1 text-[0.9rem] text-ink-muted">
+                      {sequenceStatus !== "<Offline>" ? sequenceStatus : "First valid sub has not completed yet."}
+                    </div>
+                  </div>
+
+                  <div class="grid grid-cols-2 gap-x-4 gap-y-3">
+                    <div class="border-t border-line-soft pt-2.5">
+                      <div class="font-mono text-[0.56rem] uppercase tracking-[0.22em] text-ink-soft">Started</div>
+                      <div class="mt-1 text-[0.94rem] text-ink-strong">
+                        <LocalTime value={live.session?.startedAt ?? null} format="date-time-short" />
+                      </div>
+                    </div>
+                    <div class="border-t border-line-soft pt-2.5">
+                      <div class="font-mono text-[0.56rem] uppercase tracking-[0.22em] text-ink-soft">Duration</div>
+                      <div class="mt-1 text-[0.94rem] text-ink-strong">
+                        {sessionDurationSeconds !== null ? formatDuration(sessionDurationSeconds) : "—"}
+                      </div>
+                    </div>
+                    <div class="col-span-2 border-t border-line-soft pt-2.5">
+                      <div class="font-mono text-[0.56rem] uppercase tracking-[0.22em] text-ink-soft">State</div>
+                      <div class="mt-1 text-[0.94rem] text-ink-strong">
+                        {isOnline
+                          ? "Awaiting first valid sub"
+                          : "Current session offline before first valid sub"}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : latestDisplayExposure ? (
                 <div class="mt-4 grid gap-4">
                   <div>
                     <div class="text-[1.08rem] font-medium tracking-[-0.02em] text-ink-strong">

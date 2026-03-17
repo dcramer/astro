@@ -245,7 +245,10 @@ function getSessionLastSeenAt(input: {
     latestPreviewCapturedAt,
   ]);
 
-  if (input.currentState?.advanced?.camera?.isExposing) {
+  if (
+    input.currentState?.advanced?.sequence?.isRunning ||
+    input.currentState?.advanced?.camera?.isExposing
+  ) {
     return input.syncedAt;
   }
 

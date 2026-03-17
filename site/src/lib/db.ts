@@ -2,6 +2,7 @@ import type {
   IngestExposurePayload,
   IngestSessionPayload,
   LiveApiResponse,
+  LiveMode,
   OverlayImage,
   SessionCurrentState,
   SessionLivePreview,
@@ -122,6 +123,17 @@ export function getStaleAfterSeconds(env: SiteRuntimeEnv): number {
   const raw = env.SYNC_STALE_AFTER_SECONDS;
   const parsed = raw ? Number.parseInt(raw, 10) : Number.NaN;
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 90;
+}
+
+function toSessionFromRow(
+  env: SiteRuntimeEnv,
+  row: Record<string, unknown> | null,
+): StoredSession | null {
+  if (!row) {
+    return null;
+  }
+
+  return toStoredSession(row, isSessionStale(String(row.last_seen_at), getStaleAfterSeconds(env)));
 }
 
 function toStoredSession(row: Record<string, unknown>, stale: boolean): StoredSession {
@@ -258,7 +270,21 @@ function isSessionStale(lastSeenAt: string, staleAfterSeconds: number): boolean 
 }
 
 export async function getLatestLiveSession(env: SiteRuntimeEnv): Promise<StoredSession | null> {
-  const row = await env.DB.prepare(
+  const activeRow = await env.DB.prepare(
+    `
+      ${SESSION_SELECT}
+      WHERE active_session = 1
+      ORDER BY datetime(last_seen_at) DESC, datetime(started_at) DESC
+      LIMIT 1
+    `,
+  ).first<Record<string, unknown>>();
+
+  const activeSession = toSessionFromRow(env, activeRow);
+  if (activeSession) {
+    return activeSession;
+  }
+
+  const archivedRow = await env.DB.prepare(
     `
       ${SESSION_SELECT}
       WHERE EXISTS (
@@ -272,11 +298,7 @@ export async function getLatestLiveSession(env: SiteRuntimeEnv): Promise<StoredS
     `,
   ).first<Record<string, unknown>>();
 
-  if (!row) {
-    return null;
-  }
-
-  return toStoredSession(row, isSessionStale(String(row.last_seen_at), getStaleAfterSeconds(env)));
+  return toSessionFromRow(env, archivedRow);
 }
 
 export async function getRecentSessions(
@@ -365,6 +387,7 @@ export async function getLiveApiResponse(env: SiteRuntimeEnv): Promise<LiveApiRe
       weather: null,
       stale: true,
       hasConnected: false,
+      liveMode: "empty",
     };
   }
 
@@ -377,6 +400,11 @@ export async function getLiveApiResponse(env: SiteRuntimeEnv): Promise<LiveApiRe
     : null;
   const hasExposureThumbnail = exposureImages.some((image) => Boolean(image.thumbnailUrl));
   const hasConnected = Boolean(session.currentState);
+  const liveMode: LiveMode = session.activeSession
+    ? session.exposureCount > 0
+      ? "active-imaging"
+      : "active-pending"
+    : "recent-archive";
 
   return {
     session,
@@ -386,6 +414,7 @@ export async function getLiveApiResponse(env: SiteRuntimeEnv): Promise<LiveApiRe
     weather: session.currentState?.weather ?? null,
     stale: session.stale,
     hasConnected,
+    liveMode,
   };
 }
 
