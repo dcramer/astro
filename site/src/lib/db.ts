@@ -63,6 +63,51 @@ function buildThumbnailUrl(exposure: StoredExposure): string | null {
   return buildAssetUrl(exposure.thumbnailKey);
 }
 
+interface ThumbnailCandidate {
+  readonly exposureId: string;
+  readonly startedAt: string;
+  readonly detectedStars: number | null;
+  readonly hfr: number | null;
+  readonly thumbnailKey: string | null;
+}
+
+function compareThumbnailCandidates<T extends ThumbnailCandidate>(left: T, right: T): number {
+  const starDelta = (right.detectedStars ?? -1) - (left.detectedStars ?? -1);
+  if (starDelta !== 0) {
+    return starDelta;
+  }
+
+  const leftHfr = left.hfr ?? Number.POSITIVE_INFINITY;
+  const rightHfr = right.hfr ?? Number.POSITIVE_INFINITY;
+  if (leftHfr !== rightHfr) {
+    return leftHfr - rightHfr;
+  }
+
+  const startedDelta = right.startedAt.localeCompare(left.startedAt);
+  if (startedDelta !== 0) {
+    return startedDelta;
+  }
+
+  return right.exposureId.localeCompare(left.exposureId);
+}
+
+function getBestThumbnailExposure<T extends ThumbnailCandidate>(exposures: ReadonlyArray<T>): T | null {
+  const candidates = exposures.filter((exposure) => Boolean(exposure.thumbnailKey));
+  if (!candidates.length) {
+    return null;
+  }
+
+  return [...candidates].sort(compareThumbnailCandidates)[0] ?? null;
+}
+
+const BEST_THUMBNAIL_EXPOSURE_ORDER = `
+        exposures.detected_stars DESC,
+        CASE WHEN exposures.hfr IS NULL THEN 1 ELSE 0 END ASC,
+        exposures.hfr ASC,
+        datetime(exposures.started_at) DESC,
+        exposures.exposure_id DESC
+`;
+
 function toOverlayImage(exposure: StoredExposure): OverlayImage {
   return {
     exposureDurationSeconds: exposure.durationSeconds,
@@ -137,6 +182,11 @@ function toSessionFromRow(
 }
 
 function toStoredSession(row: Record<string, unknown>, stale: boolean): StoredSession {
+  const latestExposureId = row.latest_valid_exposure_id ? String(row.latest_valid_exposure_id) : null;
+  const bestThumbnailExposureId = row.best_thumbnail_exposure_id
+    ? String(row.best_thumbnail_exposure_id)
+    : null;
+
   return {
     sessionKey: String(row.session_key),
     displayName: String(row.display_name),
@@ -151,9 +201,9 @@ function toStoredSession(row: Record<string, unknown>, stale: boolean): StoredSe
     lastSeenAt: String(row.last_seen_at),
     exposureCount: parseNumber(row.valid_exposure_count) ?? 0,
     totalExposureSeconds: parseNumber(row.valid_total_exposure_seconds) ?? 0,
-    latestExposureId: row.latest_valid_exposure_id ? String(row.latest_valid_exposure_id) : null,
-    heroExposureId: row.latest_valid_exposure_id ? String(row.latest_valid_exposure_id) : null,
-    heroThumbnailUrl: buildAssetUrl(row.hero_thumbnail_key ? String(row.hero_thumbnail_key) : null),
+    latestExposureId,
+    heroExposureId: bestThumbnailExposureId ?? latestExposureId,
+    heroThumbnailUrl: buildAssetUrl(row.best_thumbnail_key ? String(row.best_thumbnail_key) : null),
     stale,
     currentState: parseJson<SessionCurrentState>(
       row.current_state_payload ? String(row.current_state_payload) : null,
@@ -212,14 +262,23 @@ const SESSION_SELECT = `
       LIMIT 1
     ) AS latest_valid_exposure_id,
     (
+      SELECT exposures.exposure_id
+      FROM exposures
+      WHERE exposures.session_key = sessions.session_key
+        AND exposures.detected_stars IS NOT NULL
+        AND exposures.thumbnail_key IS NOT NULL
+      ORDER BY ${BEST_THUMBNAIL_EXPOSURE_ORDER}
+      LIMIT 1
+    ) AS best_thumbnail_exposure_id,
+    (
       SELECT exposures.thumbnail_key
       FROM exposures
       WHERE exposures.session_key = sessions.session_key
         AND exposures.detected_stars IS NOT NULL
         AND exposures.thumbnail_key IS NOT NULL
-      ORDER BY datetime(exposures.started_at) DESC, exposures.exposure_id DESC
+      ORDER BY ${BEST_THUMBNAIL_EXPOSURE_ORDER}
       LIMIT 1
-    ) AS hero_thumbnail_key,
+    ) AS best_thumbnail_key,
     (
       SELECT target_name
       FROM exposures
@@ -375,6 +434,25 @@ export async function getSessionExposures(
   return (rows.results ?? []).map(toStoredExposure);
 }
 
+export async function getExposureById(
+  env: SiteRuntimeEnv,
+  exposureId: string,
+): Promise<StoredExposure | null> {
+  const row = await env.DB.prepare(
+    `
+      SELECT *
+      FROM exposures
+      WHERE exposure_id = ?
+        AND detected_stars IS NOT NULL
+      LIMIT 1
+    `,
+  )
+    .bind(exposureId)
+    .first<Record<string, unknown>>();
+
+  return row ? toStoredExposure(row) : null;
+}
+
 export async function getLiveApiResponse(env: SiteRuntimeEnv): Promise<LiveApiResponse> {
   const session = await getLatestLiveSession(env);
 
@@ -428,7 +506,7 @@ function buildSessionUpsert(env: SiteRuntimeEnv, session: IngestSessionPayload) 
   const latestExposureId =
     [...validExposures]
       .sort((left, right) => right.startedAt.localeCompare(left.startedAt))[0]?.exposureId ?? null;
-  const heroExposureId = latestExposureId;
+  const heroExposureId = getBestThumbnailExposure(validExposures)?.exposureId ?? latestExposureId;
 
   return env.DB.prepare(
     `

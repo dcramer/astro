@@ -42,12 +42,15 @@ export function buildHomePageMetadata(live: LiveApiResponse): PageMetadata {
   }
 
   const sessionSummary = `${session.exposureCount} valid subs, ${formatIntegration(session.totalExposureSeconds)}.`;
+  const latestThumbnail =
+    live.images.find((image) => image.detectedStars !== null && image.thumbnailUrl)?.thumbnailUrl ??
+    null;
   const liveImage =
     live.liveMode === "active-pending"
       ? null
-      : live.images.find((image) => image.detectedStars !== null && image.thumbnailUrl)?.thumbnailUrl ??
-        session.heroThumbnailUrl ??
-        null;
+      : isSessionOnline(session)
+        ? latestThumbnail ?? session.heroThumbnailUrl ?? null
+        : session.heroThumbnailUrl ?? latestThumbnail ?? null;
   const imageAlt = targetName ? `${targetName} latest sub` : "Latest archived sub";
   const description =
     live.liveMode === "active-pending"
