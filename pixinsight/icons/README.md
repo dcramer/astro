@@ -13,7 +13,7 @@ Track icon libraries we depend on for repeatable workflows and keep install step
 ### RGB Broadband Workflow (`RGB-Workflow.xpsm`)
 - Generated: 06 Feb 2025 16:05 UTC from PixInsight 1.9.2 (x64).
 - Scope: broadband OSC/LRGB flow (WBPP, SPCC, color-preserving stretch, denoise/reconstruct, star management, final cosmetic tweaks).
-- Validation: mirrors the OSC workflow in `pixinsight/osc-processing.md`; run against the Rosette OSC validation set after PixInsight upgrades or SPCC catalog changes.
+- Validation: mirrors the OSC workflow in `pixinsight/osc-processing.md`; requires Gaia DR3 and Gaia DR3/SP to be configured per `pixinsight/gaia.md`; run against the Rosette OSC validation set after PixInsight upgrades or SPCC catalog changes.
 
 ### Import Workflow
 1. Copy the desired `.xpsm` file from `pixinsight/icons/` to a local, write-protected location (e.g., `Documents/PixInsight/Icons/AstroLab`).

@@ -6,6 +6,7 @@ Document stacking and post-processing procedures that occur entirely inside PixI
 ## Contents
 - **sho-processing.md** - Narrowband (SHO) stacking and post-processing workflow built around PixInsight 1.9.3 (Lockhart), WBPP 2.8.x, and modern RC Astro/GraXpert tooling.
 - **osc-processing.md** - One-shot color (OSC) stacking and post-processing workflow with color-preserving calibration, SPCC, and star color enhancement.
+- **gaia.md** - Required Gaia DR3 and Gaia DR3/SP catalog setup for ImageSolver, astrometry, and SPCC.
 - **plugins.md** - Repository-level notes for required PixInsight add-ons (scripts and modules).
 - **icons/README.md** - Process icon libraries and import workflows for shared PixInsight setups.
 
@@ -24,4 +25,5 @@ Add additional guides here for specialized topics (e.g., mosaic workflows, narro
 
 ## Maintenance
 - Update these notes whenever PixInsight releases major revisions (WBPP, SPCC, BlurXTerminator, etc.).
+- Revalidate GAIA catalog paths after workstation rebuilds, storage moves, or catalog refreshes.
 - Record validation runs-include dataset, build number, and notable parameter changes-so future edits can be traced to real-world tests.

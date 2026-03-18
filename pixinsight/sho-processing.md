@@ -10,9 +10,10 @@ Provide a repeatable PixInsight workflow for calibrating, stacking, and finishin
 
 ## Prerequisites
 1. Install or upgrade PixInsight 1.9.3 from the software distribution site, then run `Resources > Updates > Check for Updates` to pull the latest scripts.
-2. Add third-party repositories as needed: RC Astro tools and GraXpert each publish PixInsight update URLs that can be pasted into `Resources > Updates > Manage Repositories`.
-3. Organize lights by filter, session, and exposure length. Keep calibration frames tightly matched to each configuration per PixInsight's master frame guidance.
-4. Optional: configure PixInsight to auto-load your process icons (WBPP presets, PixelMath mixes, masks) using Nebularama's startup icon loader instructions for Windows. https://nebularama.com/2023/07/10/automatically-load-process-icons-in-pixinsight-on-windows/
+2. Download and configure the required GAIA catalogs before using ImageSolver or SPCC-dependent workflows. Use `pixinsight/gaia.md` to install Gaia DR3 for astrometry and Gaia DR3/SP for photometric color calibration.
+3. Add third-party repositories as needed: RC Astro tools and GraXpert each publish PixInsight update URLs that can be pasted into `Resources > Updates > Manage Repositories`.
+4. Organize lights by filter, session, and exposure length. Keep calibration frames tightly matched to each configuration per PixInsight's master frame guidance.
+5. Optional: configure PixInsight to auto-load your process icons (WBPP presets, PixelMath mixes, masks) using Nebularama's startup icon loader instructions for Windows. https://nebularama.com/2023/07/10/automatically-load-process-icons-in-pixinsight-on-windows/
 
 ## Data Preparation
 - **File hygiene:** Keep consistent naming so WBPP can auto-group frames, and cull problem subframes with Blink before they skew weighting.
@@ -42,7 +43,7 @@ Provide a repeatable PixInsight workflow for calibrating, stacking, and finishin
 
 ## Linear Processing Path
 1. **DynamicCrop / ChannelCombination:** Crop stacking artifacts and, for narrowband, combine channels with PixelMath after linear alignment.
-2. **Background:** Use **GraXpert** 3.x or **DynamicBackgroundExtraction** to remove gradients; follow with **BackgroundNeutralization** and **Spectrophotometric Color Calibration (SPCC)** on broadband data.
+2. **Background:** Use **GraXpert** 3.x or **DynamicBackgroundExtraction** to remove gradients; follow with **BackgroundNeutralization** and **Spectrophotometric Color Calibration (SPCC)** on broadband data once the Gaia DR3/SP catalog is configured.
 3. **Noise & Deconvolution:**
    - Apply **BlurXTerminator** early (linear, star mask protected). For SHO data, run per-channel before combination if halos persist.
    - Follow with **NoiseXTerminator** while the data are still linear, tuning strength for luminance vs. chrominance.
@@ -77,6 +78,7 @@ Provide a repeatable PixInsight workflow for calibrating, stacking, and finishin
 ## Troubleshooting
 - **WBPP stalls on integration:** Check memory usage and, if necessary, split projects into smaller batches before recombining with WBPP's cache-aware reruns.
 - **Calibration mismatch:** Rebuild or replace weak master frames-PixInsight's master-frame methodology assumes clean, bias/dark-subtracted flats.
+- **ImageSolver or SPCC fails immediately:** Confirm the Gaia DR3 and Gaia DR3/SP database folders are downloaded locally and mapped correctly in the GAIA process settings.
 - **Plate solving failures inside WBPP:** Recheck focus and exposure; if ASTAP struggles, increase exposure slightly or refocus before rerunning TPPA/platesolve loops.
 - **TPPA inconsistent results feeding into WBPP:** Run the NINA Three Point Polar Alignment plugin with tracking enabled, keep runs short, and repeat until residual drift stabilizes.
 

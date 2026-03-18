@@ -2,6 +2,7 @@
 
 ## Usage
 Use this catalog whenever we rebuild PixInsight or validate lab/staging machines. Add each URL under `Resources > Updates > Manage Repositories`, run `Check for Updates`, then restart PixInsight so the new scripts or modules register. Record the validation date, PixInsight build, and dataset in the processing journal.
+Core catalog datasets such as GAIA are documented separately in `pixinsight/gaia.md`; this file is only for repository-delivered scripts and modules.
 
 ## Repository Catalog
 

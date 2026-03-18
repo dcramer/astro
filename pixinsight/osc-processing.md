@@ -10,9 +10,10 @@ Provide a repeatable PixInsight workflow for calibrating, stacking, and finishin
 
 ## Prerequisites
 1. Install or update PixInsight to 1.9.3 and run `Resources > Updates > Check for Updates` for all core scripts.
-2. Add third-party repositories (RC Astro, GraXpert) via `Resources > Updates > Manage Repositories`; enable automatic updates.
-3. Organize lights by session/target; maintain calibration libraries temperature-binned in 5 C increments. PixInsight"s master-frame tutorial covers recommended acquisition and integration strategies.
-4. Optional: configure PixInsight to auto-load OSC process icons (WBPP presets, color calibration flows) using Nebularama"s icon loader instructions.
+2. Download and configure the required GAIA catalogs before using ImageSolver or SPCC. Use `pixinsight/gaia.md` to install Gaia DR3 for astrometry and Gaia DR3/SP for photometric color calibration.
+3. Add third-party repositories (RC Astro, GraXpert) via `Resources > Updates > Manage Repositories`; enable automatic updates.
+4. Organize lights by session/target; maintain calibration libraries temperature-binned in 5 C increments. PixInsight"s master-frame tutorial covers recommended acquisition and integration strategies.
+5. Optional: configure PixInsight to auto-load OSC process icons (WBPP presets, color calibration flows) using Nebularama"s icon loader instructions.
 
 ## Data Preparation
 - **Blink screening:** Reject cloudy or trailed subs prior to WBPP to prevent PSF Signal Weight bias.
@@ -43,7 +44,7 @@ Provide a repeatable PixInsight workflow for calibrating, stacking, and finishin
 1. **DynamicCrop** to remove stacking artifacts.
 2. **GraXpert** 3.x or **DynamicBackgroundExtraction** to remove gradients; follow with **BackgroundNeutralization**.
 3. **Color Calibration:**
-   - Run **Spectrophotometric Color Calibration (SPCC)** with the appropriate catalog (APASS DR10 for broadband; Pan-STARRS if available).
+   - Run **Spectrophotometric Color Calibration (SPCC)** with the Gaia DR3/SP photometric database configured locally.
    - For light-polluted data, consider **Photometric Color Calibration (PCC)** after cropping out bright gradients.
 4. **BlurXTerminator** (linear, star mask protected) followed by **NoiseXTerminator** at conservative settings (strength 0.8-1.0).
 5. Optionally create a starless copy via **StarXTerminator** to allow separate nebula/star adjustments.
@@ -70,7 +71,7 @@ Provide a repeatable PixInsight workflow for calibrating, stacking, and finishin
 - Archive WBPP logs, process icons, and final masters alongside acquisition notes.
 
 ## Troubleshooting
-- **Color calibration fails:** Ensure the image covers adequate calibration stars and SPCC catalog matches the filter set; otherwise use PCC with manual white reference.
+- **Color calibration fails:** Ensure the image covers adequate calibration stars and that the Gaia DR3/SP database path is configured correctly for SPCC; otherwise use PCC with manual white reference.
 - **Residual walking noise:** Confirm dithering cadence is frequent enough; consider using **NoiseXTerminator** at higher settings post-stretch.
 - **Color blotches after stretching:** Re-run GraXpert/DBE on the linear starless copy and restretch; inspect flats for vignetting mismatch.
 
