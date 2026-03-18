@@ -27,7 +27,7 @@ import {
 
 import styles from "./page.module.css";
 
-const DEFAULT_POLL_MS = 15000;
+const DEFAULT_POLL_MS = 5000;
 
 interface OverlayDisplayProps {
   pollMs?: number;

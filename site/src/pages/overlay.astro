@@ -4,5 +4,5 @@ import OverlayDisplay from "@/components/overlay/OverlayDisplay";
 ---
 
 <OverlayLayout title="Astro Overlay" description="Live overlay for the current imaging session.">
-  <OverlayDisplay client:load />
+  <OverlayDisplay client:load pollMs={5000} />
 </OverlayLayout>

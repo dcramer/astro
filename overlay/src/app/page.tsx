@@ -9,6 +9,6 @@ export default function Page() {
   const baseUrl = getNinaBaseUrl();
 
   return (
-    <OverlayDisplay baseUrl={baseUrl} />
+    <OverlayDisplay baseUrl={baseUrl} pollMs={5000} />
   );
 }
