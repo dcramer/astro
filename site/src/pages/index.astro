@@ -366,7 +366,10 @@ const pageMetadata = buildHomePageMetadata(live);
                   <div class="font-mono text-[0.58rem] uppercase tracking-[0.26em] text-ink-soft">
                     Target
                   </div>
-                  <h1 class="mt-3 text-[clamp(2.4rem,5vw,4.8rem)] font-medium leading-[0.95] tracking-[-0.06em] text-ink-strong">
+                  <h1
+                    class="mt-3 max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-[clamp(2.4rem,5vw,4.8rem)] font-medium leading-[0.95] tracking-[-0.06em] text-ink-strong"
+                    title={currentTarget}
+                  >
                     {currentTarget}
                   </h1>
 
