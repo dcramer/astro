@@ -20,7 +20,6 @@ import {
   formatSequenceProgressSuffix,
   formatSequenceStatus,
   getRemainingSeconds,
-  getFilterColor,
   normalizeSequenceBreadcrumbEntry,
   summarizeImageHistory,
 } from "./utils";
@@ -278,25 +277,8 @@ function OverlayDisplayInner({
               </div>
               <div className={styles.latestMetric}>
                 <span className={styles.latestMetricLabel}>Filter</span>
-                <span className={styles.latestMetricValue} style={{ display: 'flex', alignItems: 'center' }}>
+                <span className={styles.latestMetricValue}>
                   {latestImage?.filterName?.trim() ?? "—"}
-                  {(() => {
-                    const color = getFilterColor(latestImage?.filterName);
-                    if (!color) return null;
-                    return (
-                      <span
-                        style={{
-                          display: 'inline-block',
-                          width: '12px',
-                          height: '12px',
-                          borderRadius: '2px',
-                          backgroundColor: color,
-                          marginLeft: '6px',
-                          border: color === '#ffffff' ? '1px solid rgba(255,255,255,0.3)' : 'none'
-                        }}
-                      />
-                    );
-                  })()}
                 </span>
               </div>
               <div className={styles.latestMetric}>

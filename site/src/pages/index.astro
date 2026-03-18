@@ -18,21 +18,39 @@ import {
   formatHumidity,
   formatSkyQuality,
 } from "@/components/overlay/utils/weather";
-import FilterSwatch from "@/components/site/FilterSwatch.astro";
 import LocalTime from "@/components/site/LocalTime.astro";
 import PublicHeader from "@/components/site/PublicHeader.astro";
 import SiteLayout from "@/layouts/SiteLayout.astro";
 import { getPreferredTargetName } from "@/lib/current-target";
-import { getLiveApiResponse, getSessionExposures } from "@/lib/db";
+import { getExposureById, getLiveApiResponse, getSessionExposures } from "@/lib/db";
 import { buildHomePageMetadata } from "@/lib/page-metadata";
 import { type SessionStatusTone } from "@/lib/session-status";
 import { formatDuration, formatNumber } from "@nina/format";
 
 const live = await getLiveApiResponse(env);
 const sessionExposures = live.session ? await getSessionExposures(env, live.session.sessionKey, 500) : [];
+const heroExposure = live.session?.heroExposureId ? await getExposureById(env, live.session.heroExposureId) : null;
 const currentState = live.session?.currentState;
 const latestExposure = live.images[0] ?? null;
 const now = Date.now();
+const buildAssetUrl = (assetKey: string | null) =>
+  assetKey
+    ? `/api/assets/${assetKey.split("/").map(encodeURIComponent).join("/")}`
+    : null;
+const toArchivedDisplayImage = (
+  exposure: (typeof sessionExposures)[number] | null,
+) => exposure
+  ? {
+      exposureDurationSeconds: exposure.durationSeconds,
+      filterName: exposure.filterName ?? "—",
+      startTime: exposure.startedAt,
+      detectedStars: exposure.detectedStars,
+      hfr: exposure.hfr,
+      rmsText: exposure.guidingRmsArcSec !== null ? `${exposure.guidingRmsArcSec.toFixed(2)}"` : "—",
+      targetName: exposure.targetName,
+      thumbnailUrl: buildAssetUrl(exposure.thumbnailKey),
+    }
+  : null;
 const currentTargetSnapshot = currentState?.currentTarget ?? null;
 const currentTargetBase = getPreferredTargetName({
   currentTarget: currentTargetSnapshot,
@@ -95,22 +113,31 @@ const sequenceBreadcrumb = sequence?.breadcrumb?.length
       .filter((entry): entry is string => Boolean(entry))
   : [];
 const sequenceTrail = sequenceBreadcrumb.length ? sequenceBreadcrumb.join(" / ") : null;
-const latestDisplayExposure = live.images.find((image) => image.detectedStars !== null) ?? null;
+const latestDisplayExposure = toArchivedDisplayImage(sessionExposures[0] ?? null);
+const heroDisplayExposure = toArchivedDisplayImage(heroExposure);
+const showBestArchivedPreview = live.liveMode !== "active-pending" && !isOnline;
+const archivedDisplayExposure = showBestArchivedPreview
+  ? heroDisplayExposure ?? latestDisplayExposure
+  : latestDisplayExposure;
 const primaryDisplayImage = live.liveMode === "active-pending"
   ? live.images.find((image) => Boolean(image.thumbnailUrl)) ?? null
-  : latestDisplayExposure;
-const primaryDisplayLabel = live.liveMode === "active-pending" ? "Current run" : "Latest sub";
+  : archivedDisplayExposure;
+const primaryDisplayLabel = live.liveMode === "active-pending"
+  ? "Current run"
+  : showBestArchivedPreview
+    ? "Best sub"
+    : "Latest sub";
 const primaryDisplayTitle = live.liveMode === "active-pending"
   ? currentTarget
-  : latestDisplayExposure?.targetName ?? currentTarget;
+  : archivedDisplayExposure?.targetName ?? currentTarget;
 const cameraProgressPercent = cameraProgress ? Math.max(0, Math.min(100, Math.round(cameraProgress.percent * 100))) : null;
-const latestHfr = latestDisplayExposure?.hfr !== null && latestDisplayExposure?.hfr !== undefined
-  ? formatNumber(latestDisplayExposure.hfr, 2)
+const primaryDisplayHfr = archivedDisplayExposure?.hfr !== null && archivedDisplayExposure?.hfr !== undefined
+  ? formatNumber(archivedDisplayExposure.hfr, 2)
   : "—";
-const latestStars = latestDisplayExposure?.detectedStars !== null && latestDisplayExposure?.detectedStars !== undefined
-  ? String(latestDisplayExposure.detectedStars)
+const primaryDisplayStars = archivedDisplayExposure?.detectedStars !== null && archivedDisplayExposure?.detectedStars !== undefined
+  ? String(archivedDisplayExposure.detectedStars)
   : "—";
-const latestGuideRms = latestDisplayExposure?.rmsText ?? "—";
+const primaryDisplayGuideRms = archivedDisplayExposure?.rmsText ?? "—";
 const liveStatusTone: SessionStatusTone = !live.session
   ? "waiting"
   : isOnline
@@ -133,19 +160,23 @@ const liveStatusDetail = !live.session
         : "Current session is not reporting new data."
       : "Showing the most recent archived session.";
 const liveStatusDotClass = liveStatusTone === "online"
-  ? "bg-emerald-400 shadow-[0_0_18px_rgba(52,211,153,0.55)]"
+  ? "bg-white shadow-[0_0_16px_rgba(255,255,255,0.18)]"
   : liveStatusTone === "offline"
-    ? "bg-rose-400 shadow-[0_0_18px_rgba(251,113,133,0.45)]"
-    : "bg-white/32";
+    ? "bg-white/30"
+    : "bg-white/18";
 const FILTER_SORT_ORDER = ["L", "R", "G", "B", "Ha", "OIII", "SII", "Unfiltered"];
 const filterLabels = new Set<string>();
+const previewPanelClass = "rounded-[18px] border border-white/10 bg-black px-4 py-4";
+const statPanelClass = "rounded-[18px] border border-white/10 bg-black px-4 py-4";
+const metricCardClass = "rounded-[16px] border border-white/10 bg-black px-4 py-3";
+const badgeClass = "inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/80 px-2.5 py-1 font-mono text-[0.62rem] uppercase tracking-[0.18em] text-white/70";
 
 for (const exposure of sessionExposures) {
   filterLabels.add(exposure.filterName?.trim() || "Unfiltered");
 }
 
-if (!filterLabels.size && latestDisplayExposure?.filterName) {
-  filterLabels.add(latestDisplayExposure.filterName.trim());
+if (!filterLabels.size && archivedDisplayExposure?.filterName) {
+  filterLabels.add(archivedDisplayExposure.filterName.trim());
 }
 
 const filterBreakdown = Array.from(filterLabels).sort((left, right) => {
@@ -166,6 +197,7 @@ const filterBreakdown = Array.from(filterLabels).sort((left, right) => {
 
   return left.localeCompare(right);
 });
+const primaryFilterLabel = archivedDisplayExposure?.filterName?.trim() || "—";
 const pageMetadata = buildHomePageMetadata(live);
 ---
 
@@ -193,12 +225,16 @@ const pageMetadata = buildHomePageMetadata(live);
                 data-lightbox-time={live.liveMode === "active-pending" ? live.session?.startedAt ?? "" : primaryDisplayImage.startTime}
                 data-lightbox-filter={live.liveMode === "active-pending" ? "" : primaryDisplayImage.filterName ?? ""}
                 data-lightbox-duration={live.liveMode === "active-pending" ? "" : formatDuration(primaryDisplayImage.exposureDurationSeconds)}
-                data-lightbox-hfr={live.liveMode === "active-pending" ? "" : latestHfr}
-                data-lightbox-stars={live.liveMode === "active-pending" ? "" : latestStars}
-                data-lightbox-rms={live.liveMode === "active-pending" ? "" : latestGuideRms}
+                data-lightbox-hfr={live.liveMode === "active-pending" ? "" : primaryDisplayHfr}
+                data-lightbox-stars={live.liveMode === "active-pending" ? "" : primaryDisplayStars}
+                data-lightbox-rms={live.liveMode === "active-pending" ? "" : primaryDisplayGuideRms}
                 data-lightbox-alt={primaryDisplayTitle}
-                class="block cursor-zoom-in overflow-hidden rounded-[20px] border border-line-soft bg-black text-left shadow-[0_20px_60px_rgba(0,0,0,0.34)] transition-transform hover:scale-[1.002]"
-                aria-label={live.liveMode === "active-pending" ? "Expand current run preview" : "Expand latest exposure"}
+                class="block cursor-zoom-in overflow-hidden rounded-[18px] border border-white/10 bg-black text-left shadow-[0_20px_60px_rgba(0,0,0,0.42)] transition-transform hover:scale-[1.002]"
+                aria-label={live.liveMode === "active-pending"
+                  ? "Expand current run preview"
+                  : primaryDisplayLabel === "Best sub"
+                    ? "Expand best exposure"
+                    : "Expand latest exposure"}
               >
                 <img
                   src={primaryDisplayImage.thumbnailUrl}
@@ -209,7 +245,7 @@ const pageMetadata = buildHomePageMetadata(live);
             ) : (
               <div class="flex aspect-[4/3] flex-col items-center justify-center rounded-[20px] border border-dashed border-line-soft bg-black/30 px-6 text-center">
                 <div class="font-mono text-[0.68rem] uppercase tracking-[0.2em] text-ink-soft">
-                  {live.liveMode === "active-pending" ? "Current run" : "Latest sub"}
+                  {primaryDisplayLabel}
                 </div>
                 <div class="mt-3 text-[1rem] font-medium tracking-[-0.02em] text-ink-strong">
                   {live.liveMode === "active-pending" ? currentTarget : "Waiting for first real sub"}
@@ -222,17 +258,15 @@ const pageMetadata = buildHomePageMetadata(live);
               </div>
             )}
 
-            <section class="rounded-[18px] border border-line-soft bg-black/18 px-4 py-4">
+            <section class={previewPanelClass}>
               <div class="flex items-center justify-between gap-3">
                 <div class="font-mono text-[0.6rem] uppercase tracking-[0.24em] text-ink-soft">
                   {primaryDisplayLabel}
                 </div>
-                {latestDisplayExposure && live.liveMode !== "active-pending" ? (
-                  <FilterSwatch
-                    filterName={latestDisplayExposure.filterName}
-                    class="text-[0.74rem] text-ink-muted"
-                    labelClass="font-mono uppercase tracking-[0.14em]"
-                  />
+                {archivedDisplayExposure && live.liveMode !== "active-pending" ? (
+                  <span class="font-mono text-[0.68rem] uppercase tracking-[0.16em] text-ink-muted">
+                    {primaryFilterLabel}
+                  </span>
                 ) : null}
               </div>
 
@@ -258,35 +292,35 @@ const pageMetadata = buildHomePageMetadata(live);
                     </div>
                   </div>
                 </div>
-              ) : latestDisplayExposure ? (
+              ) : archivedDisplayExposure ? (
                 <div class="mt-4 grid gap-4">
                   <div>
                     <div class="text-[1.08rem] font-medium tracking-[-0.02em] text-ink-strong">
-                      {latestDisplayExposure.targetName ?? currentTarget}
+                      {archivedDisplayExposure.targetName ?? currentTarget}
                     </div>
                     <div class="mt-1 text-[0.86rem] text-ink-muted">
-                      <LocalTime value={latestDisplayExposure.startTime} format="date-time-short" />
+                      <LocalTime value={archivedDisplayExposure.startTime} format="date-time-short" />
                     </div>
                   </div>
 
                   <div class="grid grid-cols-2 gap-x-4 gap-y-3">
-                    <div class="border-t border-line-soft pt-2.5">
+                    <div class="border-t border-white/10 pt-2.5">
                       <div class="font-mono text-[0.56rem] uppercase tracking-[0.22em] text-ink-soft">Duration</div>
                       <div class="mt-1 text-[0.94rem] text-ink-strong">
-                        {formatDuration(latestDisplayExposure.exposureDurationSeconds)}
+                        {formatDuration(archivedDisplayExposure.exposureDurationSeconds)}
                       </div>
                     </div>
-                    <div class="border-t border-line-soft pt-2.5">
+                    <div class="border-t border-white/10 pt-2.5">
                       <div class="font-mono text-[0.56rem] uppercase tracking-[0.22em] text-ink-soft">HFR</div>
-                      <div class="mt-1 text-[0.94rem] text-ink-strong">{latestHfr}</div>
+                      <div class="mt-1 text-[0.94rem] text-ink-strong">{primaryDisplayHfr}</div>
                     </div>
-                    <div class="border-t border-line-soft pt-2.5">
+                    <div class="border-t border-white/10 pt-2.5">
                       <div class="font-mono text-[0.56rem] uppercase tracking-[0.22em] text-ink-soft">Stars</div>
-                      <div class="mt-1 text-[0.94rem] text-ink-strong">{latestStars}</div>
+                      <div class="mt-1 text-[0.94rem] text-ink-strong">{primaryDisplayStars}</div>
                     </div>
-                    <div class="border-t border-line-soft pt-2.5">
+                    <div class="border-t border-white/10 pt-2.5">
                       <div class="font-mono text-[0.56rem] uppercase tracking-[0.22em] text-ink-soft">Guide RMS</div>
-                      <div class="mt-1 text-[0.94rem] text-ink-strong">{latestGuideRms}</div>
+                      <div class="mt-1 text-[0.94rem] text-ink-strong">{primaryDisplayGuideRms}</div>
                     </div>
                   </div>
                 </div>
@@ -299,26 +333,19 @@ const pageMetadata = buildHomePageMetadata(live);
           <div class="flex flex-col gap-8">
             <div>
               <div class="flex flex-wrap items-center gap-2">
-                <div
-                  class:list={[
-                    "inline-flex items-center gap-2 rounded-full border px-2.5 py-1 font-mono text-[0.62rem] uppercase tracking-[0.18em]",
-                    liveStatusTone === "online"
-                      ? "border-live-line-strong text-live-soft"
-                      : "border-white/10 text-ink-muted",
-                  ]}
-                >
+                <div class={badgeClass}>
                   <span class:list={["h-2 w-2 rounded-full", liveStatusDotClass]} />
                   {liveStatusLabel}
                 </div>
 
                 {live.session ? (
-                  <div class="inline-flex items-center rounded-full border border-line-soft px-2.5 py-1 font-mono text-[0.62rem] uppercase tracking-[0.18em] text-ink-muted">
+                  <div class={badgeClass}>
                     {live.session.displayName}
                   </div>
                 ) : null}
 
                 {live.session?.profileName ? (
-                  <div class="inline-flex items-center rounded-full border border-line-soft px-2.5 py-1 font-mono text-[0.62rem] uppercase tracking-[0.18em] text-ink-muted">
+                  <div class={badgeClass}>
                     {live.session.profileName}
                   </div>
                 ) : null}
@@ -341,7 +368,7 @@ const pageMetadata = buildHomePageMetadata(live);
                   </div>
 
                   {sequenceTrail ? (
-                    <div class="mt-5 border-l border-line-strong pl-4 font-mono text-[0.72rem] uppercase tracking-[0.15em] text-ink-muted">
+                    <div class="mt-5 border-l border-white/14 pl-4 font-mono text-[0.72rem] uppercase tracking-[0.15em] text-ink-muted">
                       {sequenceTrail}
                     </div>
                   ) : null}
@@ -354,9 +381,9 @@ const pageMetadata = buildHomePageMetadata(live);
                     <span>Exposure progress</span>
                     <span>{cameraProgressPercent}%</span>
                   </div>
-                  <div class="mt-2 h-2.5 overflow-hidden rounded-full bg-white/7">
+                  <div class="mt-2 h-2.5 overflow-hidden rounded-full bg-white/8">
                     <div
-                      class="h-full rounded-full bg-[linear-gradient(90deg,rgba(255,255,255,0.72),rgba(142,112,255,0.88))]"
+                      class="h-full rounded-full bg-[linear-gradient(90deg,rgba(255,255,255,0.9),rgba(255,255,255,0.45))]"
                       style={`width:${cameraProgressPercent}%`}
                     />
                   </div>
@@ -364,82 +391,56 @@ const pageMetadata = buildHomePageMetadata(live);
               ) : null}
             </div>
 
-            <div class="grid gap-5 lg:grid-cols-2">
-              <section class="rounded-[18px] border border-line-soft bg-black/12 px-4 py-4">
-                <div class="font-mono text-[0.58rem] uppercase tracking-[0.24em] text-ink-soft">Rig status</div>
-                {isOnline ? (
-                  <div class="mt-4 grid gap-3">
-                    <div class="flex items-start justify-between gap-4 border-t border-line-soft pt-3 first:border-t-0 first:pt-0">
-                      <div class="font-mono text-[0.56rem] uppercase tracking-[0.2em] text-ink-soft">Camera</div>
-                      <div class="max-w-[16rem] text-right text-[0.96rem] text-ink-strong">{cameraStatus}</div>
-                    </div>
-                    <div class="flex items-start justify-between gap-4 border-t border-line-soft pt-3">
-                      <div class="font-mono text-[0.56rem] uppercase tracking-[0.2em] text-ink-soft">Sequencer</div>
-                      <div class="max-w-[16rem] text-right text-[0.96rem] text-ink-strong">{sequenceStatus}</div>
-                    </div>
-                    <div class="flex items-start justify-between gap-4 border-t border-line-soft pt-3">
-                      <div class="font-mono text-[0.56rem] uppercase tracking-[0.2em] text-ink-soft">Mount</div>
-                      <div class="max-w-[16rem] text-right text-[0.96rem] text-ink-strong">{mountStatus}</div>
-                    </div>
-                  </div>
-                ) : (
-                  <div class="mt-4 flex min-h-[8.75rem] items-center justify-center rounded-[14px] border border-dashed border-line-soft bg-black/18">
-                    <span class="font-mono text-[0.72rem] uppercase tracking-[0.22em] text-ink-soft">
-                      &lt;Offline&gt;
-                    </span>
-                  </div>
-                )}
+            <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
+              <section class={metricCardClass}>
+                <div class="font-mono text-[0.58rem] uppercase tracking-[0.22em] text-ink-soft">Camera</div>
+                <div class="mt-2 text-[1rem] font-medium text-ink-strong">{cameraStatus}</div>
               </section>
-
-              <section class="rounded-[18px] border border-line-soft bg-black/12 px-4 py-4">
-                <div class="font-mono text-[0.58rem] uppercase tracking-[0.24em] text-ink-soft">Environment</div>
-                {isOnline ? (
-                  <div class="mt-4 grid gap-3 sm:grid-cols-3">
-                    <div class="border-t border-line-soft pt-3 sm:border-t-0 sm:pt-0">
-                      <div class="font-mono text-[0.56rem] uppercase tracking-[0.2em] text-ink-soft">Sky</div>
-                      <div class="mt-1 text-[1rem] text-ink-strong">{skyQuality}</div>
-                    </div>
-                    <div class="border-t border-line-soft pt-3 sm:border-t-0 sm:pt-0">
-                      <div class="font-mono text-[0.56rem] uppercase tracking-[0.2em] text-ink-soft">Ambient</div>
-                      <div class="mt-1 text-[1rem] text-ink-strong">{ambientTemperature}</div>
-                    </div>
-                    <div class="border-t border-line-soft pt-3 sm:border-t-0 sm:pt-0">
-                      <div class="font-mono text-[0.56rem] uppercase tracking-[0.2em] text-ink-soft">Humidity</div>
-                      <div class="mt-1 text-[1rem] text-ink-strong">{humidity}</div>
-                    </div>
+              <section class:list={[metricCardClass, "xl:col-span-2"]}>
+                <div class="font-mono text-[0.58rem] uppercase tracking-[0.22em] text-ink-soft">Mount</div>
+                <div class="mt-2 text-[1rem] font-medium leading-6 text-ink-strong">{mountStatus}</div>
+              </section>
+              <section class={metricCardClass}>
+                <div class="font-mono text-[0.58rem] uppercase tracking-[0.22em] text-ink-soft">Sky quality</div>
+                <div class="mt-2 text-[1rem] font-medium text-ink-strong">{skyQuality}</div>
+              </section>
+              <section class={metricCardClass}>
+                <div class="font-mono text-[0.58rem] uppercase tracking-[0.22em] text-ink-soft">Ambient</div>
+                <div class="mt-2 text-[1rem] font-medium text-ink-strong">{ambientTemperature}</div>
+              </section>
+              <section class={metricCardClass}>
+                <div class="font-mono text-[0.58rem] uppercase tracking-[0.22em] text-ink-soft">Humidity</div>
+                <div class="mt-2 text-[1rem] font-medium text-ink-strong">{humidity}</div>
+              </section>
+              <section class:list={[statPanelClass, "sm:col-span-2 xl:col-span-6"]}>
+                <div class="font-mono text-[0.58rem] uppercase tracking-[0.24em] text-ink-soft">Sequencer</div>
+                <div class="mt-2 text-[1rem] font-medium text-ink-strong">{sequenceStatus}</div>
+                {sequenceTrail ? (
+                  <div class="mt-3 border-t border-white/10 pt-3 font-mono text-[0.72rem] uppercase tracking-[0.14em] text-ink-muted">
+                    {sequenceTrail}
                   </div>
-                ) : (
-                  <div class="mt-4 flex min-h-[8.75rem] items-center justify-center rounded-[14px] border border-dashed border-line-soft bg-black/18">
-                    <span class="font-mono text-[0.72rem] uppercase tracking-[0.22em] text-ink-soft">
-                      &lt;Offline&gt;
-                    </span>
-                  </div>
-                )}
+                ) : null}
               </section>
             </div>
 
             <div class="grid gap-4 sm:grid-cols-3">
-              <div class="border-t border-line-soft pt-3">
+              <div class={metricCardClass}>
                 <div class="font-mono text-[0.58rem] uppercase tracking-[0.22em] text-ink-soft">Total subs</div>
                 <div class="mt-1 text-[1.15rem] font-medium text-ink-strong">{live.session?.exposureCount ?? 0}</div>
               </div>
-              <div class="border-t border-line-soft pt-3">
+              <div class={metricCardClass}>
                 <div class="font-mono text-[0.58rem] uppercase tracking-[0.22em] text-ink-soft">Integration</div>
                 <div class="mt-1 text-[1.15rem] font-medium text-ink-strong">
                   {live.session ? formatDuration(live.session.totalExposureSeconds) : "—"}
                 </div>
               </div>
-              <div class="border-t border-line-soft pt-3">
+              <div class={metricCardClass}>
                 <div class="font-mono text-[0.58rem] uppercase tracking-[0.22em] text-ink-soft">Filters</div>
-                <div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2 text-[0.92rem] text-ink-strong">
+                <div class="mt-2 flex flex-wrap items-center gap-2 text-[0.92rem] text-ink-strong">
                   {filterBreakdown.length ? filterBreakdown.map((filter) => (
-                    <div class="inline-flex items-center gap-2">
-                      <FilterSwatch
-                        filterName={filter === "Unfiltered" ? null : filter}
-                        class="text-[0.92rem] text-ink-strong"
-                        squareClass="h-2.5 w-2.5"
-                      />
-                    </div>
+                    <span class="inline-flex items-center rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-1 font-mono text-[0.72rem] uppercase tracking-[0.12em] text-ink-muted">
+                      {filter}
+                    </span>
                   )) : (
                     <span class="text-[0.96rem] text-ink-muted">—</span>
                   )}

@@ -2,10 +2,11 @@ import { useEffect, useRef, useState } from "react";
 
 import type {
   AdvancedStatus,
+  NinaImageHistoryEntry,
   NinaMountInfo,
   NinaWeatherInfo,
 } from "@nina/advanced";
-import type { CurrentTargetSnapshot, LiveApiResponse, OverlayImage } from "@/lib/site-types";
+import type { CurrentTargetSnapshot, LiveApiResponse } from "@/lib/site-types";
 
 const FAILURE_THRESHOLD = 3;
 
@@ -13,8 +14,19 @@ interface UseOverlaySessionOptions {
   pollMs: number;
 }
 
+type OverlaySessionImage = NinaImageHistoryEntry & {
+  thumbnailUrl?: string | null;
+};
+
+interface DirectOverlaySessionResponse {
+  images?: ReadonlyArray<OverlaySessionImage>;
+  advanced?: AdvancedStatus | null;
+  mount?: NinaMountInfo | null;
+  weather?: NinaWeatherInfo | null;
+}
+
 interface UseOverlaySessionResult {
-  imageHistory: ReadonlyArray<OverlayImage>;
+  imageHistory: ReadonlyArray<OverlaySessionImage>;
   advancedStatus: AdvancedStatus | null;
   connectionOffline: boolean;
   currentTargetSnapshot: CurrentTargetSnapshot | null;
@@ -28,7 +40,7 @@ export function useOverlaySession(
 ): UseOverlaySessionResult {
   const { pollMs } = options;
   const effectivePollMs = Math.max(pollMs, 3000);
-  const [imageHistory, setImageHistory] = useState<ReadonlyArray<OverlayImage>>([]);
+  const [imageHistory, setImageHistory] = useState<ReadonlyArray<OverlaySessionImage>>([]);
   const [advancedStatus, setAdvancedStatus] = useState<AdvancedStatus | null>(
     null,
   );
@@ -44,26 +56,65 @@ export function useOverlaySession(
   useEffect(() => {
     let cancelled = false;
 
+    async function fetchJson<T>(url: string): Promise<T> {
+      const response = await fetch(url, { cache: "no-store" });
+      if (!response.ok) {
+        throw new Error(`Request failed: ${response.status} (${url})`);
+      }
+
+      return (await response.json()) as T;
+    }
+
     async function fetchLatest() {
       try {
-        const response = await fetch("/api/live", { cache: "no-store" });
-        if (!response.ok) {
-          throw new Error(`Request failed: ${response.status}`);
-        }
-
-        const payload = (await response.json()) as LiveApiResponse;
+        const [directResult, liveResult] = await Promise.allSettled([
+          fetchJson<DirectOverlaySessionResponse>("/api/overlay-session"),
+          fetchJson<LiveApiResponse>("/api/live"),
+        ]);
 
         if (cancelled) {
           return;
         }
 
-        const historyData = payload?.images ?? [];
-        const advancedData = payload?.advanced ?? null;
-        const mountData = payload?.mount ?? null;
-        const weatherData = payload?.weather ?? null;
-        const currentTargetData = payload?.session?.currentState?.currentTarget ?? null;
-        const hasConnected = payload?.hasConnected ?? false;
-        const offline = (payload?.stale ?? true) || !hasConnected;
+        const directPayload = directResult.status === "fulfilled" ? directResult.value : null;
+        const livePayload = liveResult.status === "fulfilled" ? liveResult.value : null;
+
+        setCurrentTargetSnapshot(livePayload?.session?.currentState?.currentTarget ?? null);
+
+        if (directPayload) {
+          const hasDirectData =
+            (directPayload.images?.length ?? 0) > 0 ||
+            directPayload.advanced !== null ||
+            directPayload.mount !== null ||
+            directPayload.weather !== null;
+
+          failureCountRef.current = 0;
+          setConnectionOffline(!hasDirectData);
+          setImageHistory(directPayload.images ?? []);
+          setAdvancedStatus(directPayload.advanced ?? livePayload?.advanced ?? null);
+          setMountInfo(directPayload.mount ?? livePayload?.mount ?? null);
+          setWeatherInfo(directPayload.weather ?? livePayload?.weather ?? null);
+          setHasConnected(hasDirectData);
+
+          if (loggedFailureRef.current) {
+            console.info("Overlay session recovered after fetch failures.");
+            loggedFailureRef.current = false;
+          }
+          return;
+        }
+
+        if (!livePayload) {
+          const directError = directResult.status === "rejected" ? directResult.reason : null;
+          const liveError = liveResult.status === "rejected" ? liveResult.reason : null;
+          throw directError ?? liveError ?? new Error("Overlay data unavailable.");
+        }
+
+        const historyData = livePayload.images ?? [];
+        const advancedData = livePayload.advanced ?? null;
+        const mountData = livePayload.mount ?? null;
+        const weatherData = livePayload.weather ?? null;
+        const connected = livePayload.hasConnected ?? false;
+        const offline = (livePayload.stale ?? true) || !connected;
 
         failureCountRef.current = 0;
         setConnectionOffline(offline);
@@ -71,8 +122,7 @@ export function useOverlaySession(
         setAdvancedStatus(advancedData);
         setMountInfo(mountData);
         setWeatherInfo(weatherData);
-        setCurrentTargetSnapshot(currentTargetData);
-        setHasConnected(hasConnected);
+        setHasConnected(connected);
 
         if (loggedFailureRef.current) {
           console.info("Overlay session recovered after fetch failures.");

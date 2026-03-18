@@ -3,15 +3,14 @@
   width: 1600px;
   height: 900px;
   padding: 20px;
-  background: transparent;
-  --bg-panel: #091124;
-  --bg-panel-accent: radial-gradient(circle at 20% 20%, rgba(59, 130, 246, 0.85), rgba(15, 23, 42, 0.95));
-  --bg-chip: rgba(9, 20, 38, 0.9);
-  --border-soft: rgba(148, 197, 255, 0.32);
-  --border-strong: rgba(94, 234, 212, 0.45);
-  --text-soft: rgba(148, 197, 255, 0.78);
-  --text-strong: #e6f6ff;
-  --text-muted: rgba(203, 213, 225, 0.75);
+  background: #000;
+  --bg-panel: rgba(0, 0, 0, 0.92);
+  --bg-chip: rgba(0, 0, 0, 0.9);
+  --border-soft: rgba(255, 255, 255, 0.14);
+  --border-strong: rgba(255, 255, 255, 0.24);
+  --text-soft: rgba(255, 255, 255, 0.62);
+  --text-strong: #f5f5f5;
+  --text-muted: rgba(229, 231, 235, 0.72);
   color: var(--text-strong);
   font-family: var(--font-geist-sans, 'Segoe UI', sans-serif);
   pointer-events: none;
@@ -37,7 +36,9 @@
 .thumbnail {
   width: 100%;
   aspect-ratio: 4 / 3;
-  background: #050b15;
+  background: #000;
+  border: 1px solid var(--border-soft);
+  border-radius: 20px;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -63,8 +64,10 @@
 
 .targetCard {
   width: 100%;
-  padding: 2px 0 0;
-  background: transparent;
+  padding: 18px 20px 20px;
+  border: 1px solid var(--border-soft);
+  border-radius: 20px;
+  background: var(--bg-panel);
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -112,8 +115,10 @@
   flex-direction: column;
   justify-content: flex-start;
   gap: 4px;
-  padding: 0;
-  background: transparent;
+  padding: 18px 20px 20px;
+  border: 1px solid var(--border-soft);
+  border-radius: 20px;
+  background: var(--bg-panel);
   min-width: 80px;
   max-width: none;
   flex: 1 1 260px;
@@ -216,22 +221,24 @@
   position: relative;
   height: 12px;
   border-radius: 999px;
-  background: rgba(148, 197, 255, 0.18);
+  background: rgba(255, 255, 255, 0.1);
   overflow: hidden;
 }
 
 .progressFill {
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, rgba(59, 130, 246, 0.8), rgba(45, 212, 191, 0.85));
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.86), rgba(255, 255, 255, 0.42));
   transition: width 0.4s ease;
 }
 
 .latestCard {
   margin-top: 5px;
   width: 100%;
-  padding: 0;
-  background: transparent;
+  padding: 18px 20px 20px;
+  border: 1px solid var(--border-soft);
+  border-radius: 20px;
+  background: var(--bg-panel);
   display: flex;
   flex-direction: column;
   gap: 4px;

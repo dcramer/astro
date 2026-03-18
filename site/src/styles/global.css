@@ -7,25 +7,27 @@
   --font-mono: "Geist Mono Variable", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   --breakpoint-xl: 72rem;
   --color-page-base: #09090d;
-  --color-ink-strong: #f5f4f8;
-  --color-ink-muted: rgba(224, 220, 232, 0.78);
-  --color-ink-soft: rgba(163, 157, 176, 0.64);
-  --color-line-soft: rgba(255, 255, 255, 0.08);
-  --color-line-strong: rgba(255, 255, 255, 0.16);
-  --color-live-ink: #faf8ff;
-  --color-live-muted: rgba(231, 225, 241, 0.82);
-  --color-live-soft: rgba(166, 130, 255, 0.88);
+  --color-ink-strong: #f5f5f5;
+  --color-ink-muted: rgba(229, 229, 229, 0.76);
+  --color-ink-soft: rgba(161, 161, 170, 0.68);
+  --color-line-soft: rgba(255, 255, 255, 0.1);
+  --color-line-strong: rgba(255, 255, 255, 0.18);
+  --color-live-ink: #fafafa;
+  --color-live-muted: rgba(229, 229, 229, 0.78);
+  --color-live-soft: rgba(255, 255, 255, 0.86);
   --color-live-line-soft: rgba(255, 255, 255, 0.09);
-  --color-live-line-strong: rgba(166, 130, 255, 0.36);
+  --color-live-line-strong: rgba(255, 255, 255, 0.22);
   --radius-panel: 18px;
   --background-image-panel-surface: linear-gradient(
     180deg,
-    rgba(19, 19, 24, 0.96),
-    rgba(11, 11, 15, 0.99)
+    rgba(14, 14, 16, 0.98),
+    rgba(7, 7, 8, 0.99)
   );
-  --background-image-live-panel:
-    radial-gradient(circle at 18% 18%, rgba(166, 130, 255, 0.14), transparent 28%),
-    linear-gradient(180deg, rgba(19, 19, 24, 0.97), rgba(11, 11, 15, 0.99));
+  --background-image-live-panel: linear-gradient(
+    180deg,
+    rgba(14, 14, 16, 0.99),
+    rgba(6, 6, 7, 0.99)
+  );
 }
 
 @layer base {
@@ -41,9 +43,7 @@
 
   body {
     margin: 0;
-    background:
-      radial-gradient(circle at top center, rgba(166, 130, 255, 0.09), transparent 18%),
-      linear-gradient(180deg, #08080b 0%, #101015 100%);
+    background: linear-gradient(180deg, #020202 0%, #0b0b0c 100%);
     color: var(--color-ink-strong);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
@@ -60,7 +60,7 @@
       linear-gradient(90deg, rgba(255, 255, 255, 0.024) 1px, transparent 1px);
     background-size: 32px 32px;
     mask-image: linear-gradient(180deg, rgba(255, 255, 255, 0.24), transparent 78%);
-    opacity: 0.26;
+    opacity: 0.16;
   }
 
   a {
