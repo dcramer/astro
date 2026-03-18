@@ -9,6 +9,10 @@ import type {
   StoredExposure,
   StoredSession,
 } from "./site-types";
+import {
+  BEST_THUMBNAIL_EXPOSURE_ORDER,
+  getBestThumbnailExposure,
+} from "./exposure-thumbnails";
 
 function parseJson<T>(value: string | null): T | null {
   if (!value) {
@@ -63,49 +67,11 @@ function buildThumbnailUrl(exposure: StoredExposure): string | null {
   return buildAssetUrl(exposure.thumbnailKey);
 }
 
-interface ThumbnailCandidate {
-  readonly exposureId: string;
-  readonly startedAt: string;
-  readonly detectedStars: number | null;
-  readonly hfr: number | null;
-  readonly thumbnailKey: string | null;
-}
-
-function compareThumbnailCandidates<T extends ThumbnailCandidate>(left: T, right: T): number {
-  const starDelta = (right.detectedStars ?? -1) - (left.detectedStars ?? -1);
-  if (starDelta !== 0) {
-    return starDelta;
-  }
-
-  const leftHfr = left.hfr ?? Number.POSITIVE_INFINITY;
-  const rightHfr = right.hfr ?? Number.POSITIVE_INFINITY;
-  if (leftHfr !== rightHfr) {
-    return leftHfr - rightHfr;
-  }
-
-  const startedDelta = right.startedAt.localeCompare(left.startedAt);
-  if (startedDelta !== 0) {
-    return startedDelta;
-  }
-
-  return right.exposureId.localeCompare(left.exposureId);
-}
-
-function getBestThumbnailExposure<T extends ThumbnailCandidate>(exposures: ReadonlyArray<T>): T | null {
-  const candidates = exposures.filter((exposure) => Boolean(exposure.thumbnailKey));
-  if (!candidates.length) {
-    return null;
-  }
-
-  return [...candidates].sort(compareThumbnailCandidates)[0] ?? null;
-}
-
-const BEST_THUMBNAIL_EXPOSURE_ORDER = `
-        exposures.detected_stars DESC,
-        CASE WHEN exposures.hfr IS NULL THEN 1 ELSE 0 END ASC,
-        exposures.hfr ASC,
-        datetime(exposures.started_at) DESC,
-        exposures.exposure_id DESC
+const BEST_THUMBNAIL_KEY_SQL = `
+      COALESCE(
+        exposures.thumbnail_key,
+        'sessions/' || exposures.session_key || '/exposures/' || exposures.exposure_id
+      )
 `;
 
 function toOverlayImage(exposure: StoredExposure): OverlayImage {
@@ -266,16 +232,14 @@ const SESSION_SELECT = `
       FROM exposures
       WHERE exposures.session_key = sessions.session_key
         AND exposures.detected_stars IS NOT NULL
-        AND exposures.thumbnail_key IS NOT NULL
       ORDER BY ${BEST_THUMBNAIL_EXPOSURE_ORDER}
       LIMIT 1
     ) AS best_thumbnail_exposure_id,
     (
-      SELECT exposures.thumbnail_key
+      SELECT ${BEST_THUMBNAIL_KEY_SQL}
       FROM exposures
       WHERE exposures.session_key = sessions.session_key
         AND exposures.detected_stars IS NOT NULL
-        AND exposures.thumbnail_key IS NOT NULL
       ORDER BY ${BEST_THUMBNAIL_EXPOSURE_ORDER}
       LIMIT 1
     ) AS best_thumbnail_key,
@@ -631,8 +595,8 @@ function buildExposureUpsert(env: SiteRuntimeEnv, sessionKey: string, exposure: 
     exposure.guidingRmsDecArcSec,
     exposure.focuserTemperature,
     exposure.weatherTemperature,
-    null,
-    null,
+    exposure.thumbnailKey,
+    exposure.thumbnailContentType,
     new Date().toISOString(),
   );
 }

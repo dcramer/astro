@@ -28,6 +28,7 @@ import type {
   IngestStatePayload,
   SessionCurrentState,
 } from "../lib/site-types";
+import { buildExposureThumbnailKey } from "../lib/exposure-thumbnails";
 import {
   buildLivePreview,
   createSessionViewerExposureAsset,
@@ -220,7 +221,7 @@ function buildExposurePayload(
     guidingRmsDecArcSec: record.GuidingRMSDECArcSec ?? null,
     focuserTemperature: record.FocuserTemperature ?? null,
     weatherTemperature: record.WeatherTemperature ?? null,
-    thumbnailKey: `sessions/${sessionKey}/exposures/${exposureId}`,
+    thumbnailKey: buildExposureThumbnailKey(sessionKey, exposureId),
     thumbnailContentType: null,
   };
 }
