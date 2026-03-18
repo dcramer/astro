@@ -1,5 +1,6 @@
 import { formatDuration } from "@nina/format";
 
+import { getStoredSessionTargetName } from "./current-target";
 import { isSessionOnline } from "./session-status";
 import type { LiveApiResponse, StoredSession } from "./site-types";
 
@@ -21,18 +22,7 @@ function formatIntegration(totalExposureSeconds: number): string {
 }
 
 function getSessionTargetName(session: StoredSession | null): string | null {
-  if (!session) {
-    return null;
-  }
-
-  return (
-    (session.currentState?.currentTarget?.source !== "mount"
-      ? session.currentState?.currentTarget?.name ?? null
-      : null) ??
-    (session.targetNames.length ? session.targetNames.join(" / ") : null) ??
-    session.primaryTargetName ??
-    null
-  );
+  return getStoredSessionTargetName(session);
 }
 
 export function buildHomePageMetadata(live: LiveApiResponse): PageMetadata {

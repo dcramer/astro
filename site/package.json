@@ -21,6 +21,7 @@
     "db:apply": "wrangler d1 migrations apply DB --local --config wrangler.toml"
   },
   "dependencies": {
+    "@astro/catalog": "file:../overlay/packages/astro-catalog",
     "@astrojs/cloudflare": "^13.1.2",
     "@astrojs/react": "^5.0.0",
     "@fontsource-variable/geist": "5.2.8",

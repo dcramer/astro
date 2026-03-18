@@ -9,7 +9,7 @@ export interface CurrentTarget {
   name: string;
   ra: number;
   dec: number;
-  source: "sequence" | "mount" | "manual";
+  source: "sequence" | "mount" | "manual" | "catalog";
   lastUpdated: Date;
   fullName?: string;
   type?: string;

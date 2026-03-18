@@ -5,7 +5,7 @@ import type {
   NinaMountInfo,
   NinaWeatherInfo,
 } from "@nina/advanced";
-import type { LiveApiResponse, OverlayImage } from "@/lib/site-types";
+import type { CurrentTargetSnapshot, LiveApiResponse, OverlayImage } from "@/lib/site-types";
 
 const FAILURE_THRESHOLD = 3;
 
@@ -17,6 +17,7 @@ interface UseOverlaySessionResult {
   imageHistory: ReadonlyArray<OverlayImage>;
   advancedStatus: AdvancedStatus | null;
   connectionOffline: boolean;
+  currentTargetSnapshot: CurrentTargetSnapshot | null;
   hasConnected: boolean;
   mountInfo: NinaMountInfo | null;
   weatherInfo: NinaWeatherInfo | null;
@@ -33,6 +34,7 @@ export function useOverlaySession(
   );
   const [mountInfo, setMountInfo] = useState<NinaMountInfo | null>(null);
   const [weatherInfo, setWeatherInfo] = useState<NinaWeatherInfo | null>(null);
+  const [currentTargetSnapshot, setCurrentTargetSnapshot] = useState<CurrentTargetSnapshot | null>(null);
   const [connectionOffline, setConnectionOffline] = useState<boolean>(true);
   const [hasConnected, setHasConnected] = useState<boolean>(false);
 
@@ -59,6 +61,7 @@ export function useOverlaySession(
         const advancedData = payload?.advanced ?? null;
         const mountData = payload?.mount ?? null;
         const weatherData = payload?.weather ?? null;
+        const currentTargetData = payload?.session?.currentState?.currentTarget ?? null;
         const hasConnected = payload?.hasConnected ?? false;
         const offline = (payload?.stale ?? true) || !hasConnected;
 
@@ -68,6 +71,7 @@ export function useOverlaySession(
         setAdvancedStatus(advancedData);
         setMountInfo(mountData);
         setWeatherInfo(weatherData);
+        setCurrentTargetSnapshot(currentTargetData);
         setHasConnected(hasConnected);
 
         if (loggedFailureRef.current) {
@@ -91,6 +95,7 @@ export function useOverlaySession(
           setAdvancedStatus(null);
           setMountInfo(null);
           setWeatherInfo(null);
+          setCurrentTargetSnapshot(null);
           setHasConnected(false);
           console.warn("Overlay session marked offline after repeated fetch failures.");
         }
@@ -110,6 +115,7 @@ export function useOverlaySession(
     imageHistory,
     advancedStatus,
     connectionOffline,
+    currentTargetSnapshot,
     hasConnected,
     mountInfo,
     weatherInfo,

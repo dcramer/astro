@@ -41,6 +41,7 @@ function OverlayDisplayInner({
     imageHistory,
     advancedStatus,
     connectionOffline,
+    currentTargetSnapshot,
     hasConnected,
     mountInfo,
     weatherInfo,
@@ -51,6 +52,17 @@ function OverlayDisplayInner({
     advancedStatus?.sequence ?? null,
     mountInfo,
     !connectionOffline
+  );
+  const displayTarget = currentTarget ?? (
+    currentTargetSnapshot
+      ? {
+          name: currentTargetSnapshot.name,
+          ra: currentTargetSnapshot.ra ?? 0,
+          dec: currentTargetSnapshot.dec ?? 0,
+          source: currentTargetSnapshot.source,
+          lastUpdated: new Date(),
+        }
+      : null
   );
   const exposureRef = useRef<{
     key: string | null;
@@ -200,7 +212,7 @@ function OverlayDisplayInner({
   const targetName = connectionOffline
     ? "<Offline>"
     : hasConnected
-      ? currentTarget?.name || imagingTarget || "<No Target>"
+      ? displayTarget?.name || imagingTarget || "<No Target>"
       : "<Loading>";
 
   let sequencerBreadcrumb: string[] | null = sequencerChain;
@@ -310,9 +322,9 @@ function OverlayDisplayInner({
             <div className={styles.targetCard}>
               <span className={styles.targetLabel}>Target</span>
               <p className={styles.targetName}>
-                {currentTarget ? (
+                {displayTarget ? (
                   <CompactTargetDisplay
-                    target={currentTarget}
+                    target={displayTarget}
                     isLoading={isLoadingEnrichment}
                   />
                 ) : (

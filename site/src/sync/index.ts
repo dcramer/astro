@@ -33,6 +33,7 @@ import {
   createSessionViewerExposureAsset,
   type GeneratedAsset,
 } from "./assets";
+import { resolveRoughPointingTarget } from "./rough-pointing-target";
 
 interface SyncState {
   readonly version: number;
@@ -153,9 +154,9 @@ async function signedJsonFetch(
   });
 }
 
-function deriveCurrentTarget(
+async function deriveCurrentTarget(
   currentState: Pick<SessionCurrentState, "advanced" | "mount">,
-): CurrentTargetSnapshot | null {
+): Promise<CurrentTargetSnapshot | null> {
   const extracted = extractTargetWithCoordinates(currentState.advanced?.sequence ?? null);
   if (extracted?.name) {
     return extracted;
@@ -169,6 +170,11 @@ function deriveCurrentTarget(
       dec: currentState.mount?.declinationDegrees ?? undefined,
       source: "sequence",
     };
+  }
+
+  const roughPointingTarget = await resolveRoughPointingTarget(currentState.mount);
+  if (roughPointingTarget) {
+    return roughPointingTarget;
   }
 
   if (
@@ -617,7 +623,7 @@ async function syncOnce(previousState: SyncState): Promise<SyncRunResult> {
             advanced: advancedStatus,
             mount: mountInfo,
             weather: weatherInfo,
-            currentTarget: deriveCurrentTarget({ advanced: advancedStatus, mount: mountInfo }),
+            currentTarget: await deriveCurrentTarget({ advanced: advancedStatus, mount: mountInfo }),
             latestPreview: livePreview,
           }
         : null;

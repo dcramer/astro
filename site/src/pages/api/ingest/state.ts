@@ -54,7 +54,10 @@ const stateSchema = z.object({
               name: z.string(),
               ra: z.number().optional(),
               dec: z.number().optional(),
-              source: z.enum(["sequence", "mount", "manual"]),
+              source: z.enum(["sequence", "mount", "manual", "catalog"]),
+              catalogId: z.string().optional(),
+              distanceArcmin: z.number().optional(),
+              searchRadiusArcmin: z.number().optional(),
             })
             .nullable(),
           latestPreview: z

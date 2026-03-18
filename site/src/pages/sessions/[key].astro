@@ -5,6 +5,7 @@ import FilterSwatch from "@/components/site/FilterSwatch.astro";
 import LocalTime from "@/components/site/LocalTime.astro";
 import PublicHeader from "@/components/site/PublicHeader.astro";
 import SiteLayout from "@/layouts/SiteLayout.astro";
+import { getStoredSessionTargetName } from "@/lib/current-target";
 import { getSessionByKey, getSessionExposures } from "@/lib/db";
 import { buildSessionPageMetadata } from "@/lib/page-metadata";
 import { getSessionStatusLabel, getSessionStatusTone, isSessionOnline } from "@/lib/session-status";
@@ -39,10 +40,7 @@ const exposureCards = exposures.map((exposure) => ({
     exposure.guidingRmsArcSec !== null ? formatNumber(exposure.guidingRmsArcSec, 2) : "—",
   title: exposure.targetName ?? exposure.fileName ?? "Exposure",
 }));
-const sessionTargetTitle =
-  session?.currentState?.currentTarget?.name ??
-  (session?.targetNames.length ? session.targetNames.join(" / ") : session?.primaryTargetName) ??
-  "No target";
+const sessionTargetTitle = getStoredSessionTargetName(session) ?? "No target";
 const sessionStatusLabel = getSessionStatusLabel(session);
 const sessionStatusTone = getSessionStatusTone(session);
 const sessionOnline = isSessionOnline(session);

@@ -9,7 +9,10 @@ export interface CurrentTargetSnapshot {
   name: string;
   ra?: number;
   dec?: number;
-  source: "sequence" | "mount" | "manual";
+  source: "sequence" | "mount" | "manual" | "catalog";
+  catalogId?: string;
+  distanceArcmin?: number;
+  searchRadiusArcmin?: number;
 }
 
 export interface SessionLivePreview {

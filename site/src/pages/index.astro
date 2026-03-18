@@ -22,6 +22,7 @@ import FilterSwatch from "@/components/site/FilterSwatch.astro";
 import LocalTime from "@/components/site/LocalTime.astro";
 import PublicHeader from "@/components/site/PublicHeader.astro";
 import SiteLayout from "@/layouts/SiteLayout.astro";
+import { getPreferredTargetName } from "@/lib/current-target";
 import { getLiveApiResponse, getSessionExposures } from "@/lib/db";
 import { buildHomePageMetadata } from "@/lib/page-metadata";
 import { type SessionStatusTone } from "@/lib/session-status";
@@ -33,14 +34,12 @@ const currentState = live.session?.currentState;
 const latestExposure = live.images[0] ?? null;
 const now = Date.now();
 const currentTargetSnapshot = currentState?.currentTarget ?? null;
-const currentTargetBase =
-  (currentTargetSnapshot && currentTargetSnapshot.source !== "mount"
-    ? currentTargetSnapshot.name
-    : null) ??
-  latestExposure?.targetName ??
-  live.session?.primaryTargetName ??
-  currentTargetSnapshot?.name ??
-  "No target";
+const currentTargetBase = getPreferredTargetName({
+  currentTarget: currentTargetSnapshot,
+  latestExposureTargetName: latestExposure?.targetName ?? null,
+  targetNames: live.session?.targetNames ?? [],
+  primaryTargetName: live.session?.primaryTargetName ?? null,
+}) ?? "No target";
 const currentTarget = live.liveMode === "active-pending" &&
   (
     currentTargetBase === "No target" ||
