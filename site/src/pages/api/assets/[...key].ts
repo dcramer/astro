@@ -1,6 +1,8 @@
 import type { APIRoute } from "astro";
 import { env } from "cloudflare:workers";
 
+import { withCorsHeaders } from "@/lib/api-response";
+
 export const GET: APIRoute = async (context) => {
   const key = context.params.key;
 
@@ -19,9 +21,9 @@ export const GET: APIRoute = async (context) => {
   }
 
   return new Response(await object.arrayBuffer(), {
-    headers: {
+    headers: withCorsHeaders(context.request, {
       "cache-control": "public, max-age=31536000, immutable",
       "content-type": object.httpMetadata?.contentType ?? "application/octet-stream",
-    },
+    }),
   });
 };
