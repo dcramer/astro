@@ -141,23 +141,23 @@ export interface RawWeatherInfo {
 }
 
 export interface RawImageHistoryEntry {
-  ExposureTime: number;
+  ExposureTime: NumericLike;
   ImageType: string;
   Filter: string;
   RmsText: string;
-  Temperature: string | number;
+  Temperature: NumericLike;
   CameraName: string;
-  Gain: number;
-  Offset: number;
+  Gain: NumericLike;
+  Offset: NumericLike;
   Date: string;
   TelescopeName: string;
-  FocalLength: number;
-  StDev: number;
-  Mean: number;
-  Median: number;
-  Stars: number;
-  HFR: number;
-  HFRStDev?: number;
+  FocalLength: NumericLike;
+  StDev: NumericLike;
+  Mean: NumericLike;
+  Median: NumericLike;
+  Stars: NumericLike;
+  HFR: NumericLike;
+  HFRStDev?: NumericLike;
   IsBayered: boolean;
   TargetName?: string;
   Filename?: string;
