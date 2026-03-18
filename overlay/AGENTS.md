@@ -24,7 +24,8 @@ Co-Authored-By: (the agent model's name and attribution byline)
 - JSON: two-space indentation, CRLF line endings, preserve `$id`, `$type`, `$values` key order
 - JSON filenames: ASCII only, e.g. `Rosette SHO.template.json`
 - Commit messages: short, imperative, e.g. `Add narrowband startup template`
-- Include validation steps in PR notes
+- Commit directly to `main`; do not create branches or PRs unless explicitly requested
+- Include validation steps in handoff notes
 
 ## Project Structure
 | Path | Purpose |

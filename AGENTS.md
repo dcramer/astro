@@ -31,7 +31,8 @@ jq empty <file.json>
 
 ## Commits
 - Short, imperative: `Add narrowband startup template`
-- Include validation steps in PR notes
+- Commit directly to `main`; do not create branches or PRs unless explicitly requested
+- Include validation steps in handoff notes
 
 ## Security
 - **Never** store PII (addresses, names, phone numbers, API keys)
