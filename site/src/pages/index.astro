@@ -18,13 +18,14 @@ import {
   formatHumidity,
   formatSkyQuality,
 } from "@/components/overlay/utils/weather";
+import FilterSwatch from "@/components/site/FilterSwatch.astro";
 import LocalTime from "@/components/site/LocalTime.astro";
 import PublicHeader from "@/components/site/PublicHeader.astro";
 import SiteLayout from "@/layouts/SiteLayout.astro";
-import { getPreferredTargetName } from "@/lib/current-target";
+import { getPreferredTargetName, getStoredSessionTargetName } from "@/lib/current-target";
 import { getExposureById, getLiveApiResponse, getSessionExposures } from "@/lib/db";
 import { buildHomePageMetadata } from "@/lib/page-metadata";
-import { type SessionStatusTone } from "@/lib/session-status";
+import { getSessionStatusLabel, getSessionStatusTone, isSessionOnline } from "@/lib/session-status";
 import { formatDuration, formatNumber } from "@nina/format";
 
 const live = await getLiveApiResponse(env);
@@ -66,7 +67,7 @@ const currentTarget = live.liveMode === "active-pending" &&
   )
   ? "Startup Sequence"
   : currentTargetBase;
-const isOnline = Boolean(live.session?.activeSession && !live.stale && live.hasConnected);
+const isOnline = isSessionOnline(live.session);
 const camera = isOnline ? live.advanced?.camera ?? null : null;
 const connectionOptions = {
   connectionOffline: live.stale || !live.hasConnected,
@@ -138,16 +139,9 @@ const primaryDisplayStars = archivedDisplayExposure?.detectedStars !== null && a
   ? String(archivedDisplayExposure.detectedStars)
   : "—";
 const primaryDisplayGuideRms = archivedDisplayExposure?.rmsText ?? "—";
-const liveStatusTone: SessionStatusTone = !live.session
-  ? "waiting"
-  : isOnline
-    ? "online"
-    : "offline";
-const liveStatusLabel = !live.session
-  ? "Waiting"
-  : isOnline
-    ? "Online"
-    : "Offline";
+const sessionTargetTitle = getStoredSessionTargetName(live.session) ?? currentTarget;
+const liveStatusTone = getSessionStatusTone(live.session);
+const liveStatusLabel = getSessionStatusLabel(live.session);
 const liveStatusDetail = !live.session
   ? "Waiting for the first valid sub."
   : live.liveMode === "active-pending"
@@ -170,6 +164,16 @@ const previewPanelClass = "rounded-[18px] border border-white/10 bg-black px-4 p
 const statPanelClass = "rounded-[18px] border border-white/10 bg-black px-4 py-4";
 const metricCardClass = "rounded-[16px] border border-white/10 bg-black px-4 py-3";
 const badgeClass = "inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/80 px-2.5 py-1 font-mono text-[0.62rem] uppercase tracking-[0.18em] text-white/70";
+const sessionSummaryCardClass = "rounded-[18px] border border-line-soft bg-[image:var(--background-image-panel-surface)] px-6 py-6 shadow-[0_24px_80px_rgba(0,0,0,0.24)] sm:px-7 sm:py-7";
+const showSessionDetailsLayout = Boolean(live.session && !isOnline);
+const filterGroups = sessionExposures.reduce<Record<string, { count: number; total: number }>>((accumulator, exposure) => {
+  const key = exposure.filterName?.trim() || "Unfiltered";
+  const existing = accumulator[key] ?? { count: 0, total: 0 };
+  existing.count += 1;
+  existing.total += exposure.durationSeconds;
+  accumulator[key] = existing;
+  return accumulator;
+}, {});
 
 for (const exposure of sessionExposures) {
   filterLabels.add(exposure.filterName?.trim() || "Unfiltered");
@@ -179,7 +183,7 @@ if (!filterLabels.size && archivedDisplayExposure?.filterName) {
   filterLabels.add(archivedDisplayExposure.filterName.trim());
 }
 
-const filterBreakdown = Array.from(filterLabels).sort((left, right) => {
+function compareFilterLabels(left: string, right: string): number {
   const leftIndex = FILTER_SORT_ORDER.indexOf(left);
   const rightIndex = FILTER_SORT_ORDER.indexOf(right);
 
@@ -196,7 +200,10 @@ const filterBreakdown = Array.from(filterLabels).sort((left, right) => {
   }
 
   return left.localeCompare(right);
-});
+}
+
+const filterBreakdown = Array.from(filterLabels).sort(compareFilterLabels);
+const orderedFilterGroups = Object.entries(filterGroups).sort(([left], [right]) => compareFilterLabels(left, right));
 const primaryFilterLabel = archivedDisplayExposure?.filterName?.trim() || "—";
 const pageMetadata = buildHomePageMetadata(live);
 ---
@@ -331,122 +338,211 @@ const pageMetadata = buildHomePageMetadata(live);
           </div>
 
           <div class="flex flex-col gap-8">
-            <div>
-              <div class="flex flex-wrap items-center gap-2">
-                <div class={badgeClass}>
-                  <span class:list={["h-2 w-2 rounded-full", liveStatusDotClass]} />
-                  {liveStatusLabel}
-                </div>
+            {showSessionDetailsLayout && live.session ? (
+              <>
+                <article class={sessionSummaryCardClass}>
+                  <div class="flex flex-wrap items-center justify-between gap-3">
+                    <div
+                      class:list={[
+                        "inline-flex items-center gap-2 rounded-full border px-2.5 py-1 font-mono text-[0.65rem] uppercase tracking-[0.16em]",
+                        liveStatusTone === "online" ? "border-white/20 text-live-soft" : "border-white/10 text-ink-soft",
+                      ]}
+                    >
+                      <span class:list={["h-2 w-2 rounded-full", liveStatusDotClass]} />
+                      {liveStatusLabel}
+                    </div>
 
-                {live.session ? (
-                  <div class={badgeClass}>
-                    {live.session.displayName}
+                    <div class="flex flex-wrap items-center gap-2">
+                      <div class={badgeClass}>{live.session.displayName}</div>
+                      {live.session.profileName ? (
+                        <div class={badgeClass}>{live.session.profileName}</div>
+                      ) : null}
+                    </div>
                   </div>
-                ) : null}
 
-                {live.session?.profileName ? (
-                  <div class={badgeClass}>
-                    {live.session.profileName}
-                  </div>
-                ) : null}
-              </div>
-
-              <div class="mt-6">
-                <div class="min-w-0">
-                  <div class="font-mono text-[0.58rem] uppercase tracking-[0.26em] text-ink-soft">
-                    Target
-                  </div>
-                  <h1
-                    class="mt-3 max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-[clamp(2.4rem,5vw,4.8rem)] font-medium leading-[0.95] tracking-[-0.06em] text-ink-strong"
-                    title={currentTarget}
-                  >
-                    {currentTarget}
+                  <h1 class="mt-5 text-[2rem] font-medium tracking-[-0.045em] text-ink-strong sm:text-[2.4rem]">
+                    {sessionTargetTitle}
                   </h1>
 
-                  <div class="mt-4 max-w-xl text-[0.92rem] text-ink-muted">
+                  <p class="mt-3 text-[0.96rem] leading-7 text-ink-muted">
+                    Started <LocalTime value={live.session.startedAt} format="date-time" />
+                    {live.session.endedAt ? (
+                      <> · Ended <LocalTime value={live.session.endedAt} format="date-time" /></>
+                    ) : live.session.activeSession ? (
+                      <> · Last seen <LocalTime value={live.session.lastSeenAt} format="date-time" /></>
+                    ) : null}
+                  </p>
+
+                  <div class="mt-4 max-w-2xl text-[0.92rem] text-ink-muted">
                     {liveStatusDetail}
                   </div>
 
-                  {sequenceTrail ? (
-                    <div class="mt-5 border-l border-white/14 pl-4 font-mono text-[0.72rem] uppercase tracking-[0.15em] text-ink-muted">
-                      {sequenceTrail}
+                  <div class="mt-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                    <div class="rounded-[16px] border border-line-soft bg-white/[0.015] px-4 py-3">
+                      <div class="font-mono text-[0.68rem] uppercase tracking-[0.18em] text-ink-soft">Subs</div>
+                      <div class="mt-2 text-[1.05rem] font-medium text-ink-strong">{live.session.exposureCount}</div>
+                    </div>
+                    <div class="rounded-[16px] border border-line-soft bg-white/[0.015] px-4 py-3">
+                      <div class="font-mono text-[0.68rem] uppercase tracking-[0.18em] text-ink-soft">Integration</div>
+                      <div class="mt-2 text-[1.05rem] font-medium text-ink-strong">
+                        {formatDuration(live.session.totalExposureSeconds)}
+                      </div>
+                    </div>
+                    <div class="rounded-[16px] border border-line-soft bg-white/[0.015] px-4 py-3">
+                      <div class="font-mono text-[0.68rem] uppercase tracking-[0.18em] text-ink-soft">Profile</div>
+                      <div class="mt-2 text-[1.05rem] font-medium text-ink-strong">{live.session.profileName ?? "—"}</div>
+                    </div>
+                    <div class="rounded-[16px] border border-line-soft bg-white/[0.015] px-4 py-3">
+                      <div class="font-mono text-[0.68rem] uppercase tracking-[0.18em] text-ink-soft">Session</div>
+                      <a
+                        href={`/sessions/${encodeURIComponent(live.session.sessionKey)}`}
+                        class="mt-2 inline-flex text-[1.05rem] font-medium text-ink-strong transition-colors hover:text-white"
+                      >
+                        Open archive
+                      </a>
+                    </div>
+                  </div>
+                </article>
+
+                <section class={sessionSummaryCardClass}>
+                  <div class="font-mono text-[0.68rem] uppercase tracking-[0.18em] text-ink-soft">Filter mix</div>
+                  <div class="mt-5 grid gap-3">
+                    {orderedFilterGroups.length ? orderedFilterGroups.map(([filter, group]) => (
+                      <div class="flex items-baseline justify-between gap-3 border-t border-line-soft pt-3 first:border-t-0 first:pt-0">
+                        <FilterSwatch
+                          filterName={filter === "Unfiltered" ? null : filter}
+                          class="text-[0.98rem] text-ink-strong"
+                        />
+                        <span class="text-sm text-ink-muted">
+                          {group.count} · {formatDuration(group.total)}
+                        </span>
+                      </div>
+                    )) : (
+                      <div class="text-sm text-ink-soft">No exposures were archived for this session yet.</div>
+                    )}
+                  </div>
+                </section>
+              </>
+            ) : (
+              <>
+                <div>
+                  <div class="flex flex-wrap items-center gap-2">
+                    <div class={badgeClass}>
+                      <span class:list={["h-2 w-2 rounded-full", liveStatusDotClass]} />
+                      {liveStatusLabel}
+                    </div>
+
+                    {live.session ? (
+                      <div class={badgeClass}>
+                        {live.session.displayName}
+                      </div>
+                    ) : null}
+
+                    {live.session?.profileName ? (
+                      <div class={badgeClass}>
+                        {live.session.profileName}
+                      </div>
+                    ) : null}
+                  </div>
+
+                  <div class="mt-6">
+                    <div class="min-w-0">
+                      <div class="font-mono text-[0.58rem] uppercase tracking-[0.26em] text-ink-soft">
+                        Target
+                      </div>
+                      <h1
+                        class="mt-3 max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-[clamp(2.4rem,5vw,4.8rem)] font-medium leading-[0.95] tracking-[-0.06em] text-ink-strong"
+                        title={currentTarget}
+                      >
+                        {currentTarget}
+                      </h1>
+
+                      <div class="mt-4 max-w-xl text-[0.92rem] text-ink-muted">
+                        {liveStatusDetail}
+                      </div>
+
+                      {sequenceTrail ? (
+                        <div class="mt-5 border-l border-white/14 pl-4 font-mono text-[0.72rem] uppercase tracking-[0.15em] text-ink-muted">
+                          {sequenceTrail}
+                        </div>
+                      ) : null}
+                    </div>
+                </div>
+
+                  {cameraProgressPercent !== null ? (
+                    <div class="mt-6">
+                      <div class="flex items-center justify-between gap-3 font-mono text-[0.56rem] uppercase tracking-[0.22em] text-ink-soft">
+                        <span>Exposure progress</span>
+                        <span>{cameraProgressPercent}%</span>
+                      </div>
+                      <div class="mt-2 h-2.5 overflow-hidden rounded-full bg-white/8">
+                        <div
+                          class="h-full rounded-full bg-[linear-gradient(90deg,rgba(255,255,255,0.9),rgba(255,255,255,0.45))]"
+                          style={`width:${cameraProgressPercent}%`}
+                        />
+                      </div>
                     </div>
                   ) : null}
                 </div>
-            </div>
 
-              {cameraProgressPercent !== null ? (
-                <div class="mt-6">
-                  <div class="flex items-center justify-between gap-3 font-mono text-[0.56rem] uppercase tracking-[0.22em] text-ink-soft">
-                    <span>Exposure progress</span>
-                    <span>{cameraProgressPercent}%</span>
+                <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
+                  <section class={metricCardClass}>
+                    <div class="font-mono text-[0.58rem] uppercase tracking-[0.22em] text-ink-soft">Camera</div>
+                    <div class="mt-2 text-[1rem] font-medium text-ink-strong">{cameraStatus}</div>
+                  </section>
+                  <section class:list={[metricCardClass, "xl:col-span-2"]}>
+                    <div class="font-mono text-[0.58rem] uppercase tracking-[0.22em] text-ink-soft">Mount</div>
+                    <div class="mt-2 text-[1rem] font-medium leading-6 text-ink-strong">{mountStatus}</div>
+                  </section>
+                  <section class={metricCardClass}>
+                    <div class="font-mono text-[0.58rem] uppercase tracking-[0.22em] text-ink-soft">Sky quality</div>
+                    <div class="mt-2 text-[1rem] font-medium text-ink-strong">{skyQuality}</div>
+                  </section>
+                  <section class={metricCardClass}>
+                    <div class="font-mono text-[0.58rem] uppercase tracking-[0.22em] text-ink-soft">Ambient</div>
+                    <div class="mt-2 text-[1rem] font-medium text-ink-strong">{ambientTemperature}</div>
+                  </section>
+                  <section class={metricCardClass}>
+                    <div class="font-mono text-[0.58rem] uppercase tracking-[0.22em] text-ink-soft">Humidity</div>
+                    <div class="mt-2 text-[1rem] font-medium text-ink-strong">{humidity}</div>
+                  </section>
+                  <section class:list={[statPanelClass, "sm:col-span-2 xl:col-span-6"]}>
+                    <div class="font-mono text-[0.58rem] uppercase tracking-[0.24em] text-ink-soft">Sequencer</div>
+                    <div class="mt-2 text-[1rem] font-medium text-ink-strong">{sequenceStatus}</div>
+                    {sequenceTrail ? (
+                      <div class="mt-3 border-t border-white/10 pt-3 font-mono text-[0.72rem] uppercase tracking-[0.14em] text-ink-muted">
+                        {sequenceTrail}
+                      </div>
+                    ) : null}
+                  </section>
+                </div>
+
+                <div class="grid gap-4 sm:grid-cols-3">
+                  <div class={metricCardClass}>
+                    <div class="font-mono text-[0.58rem] uppercase tracking-[0.22em] text-ink-soft">Total subs</div>
+                    <div class="mt-1 text-[1.15rem] font-medium text-ink-strong">{live.session?.exposureCount ?? 0}</div>
                   </div>
-                  <div class="mt-2 h-2.5 overflow-hidden rounded-full bg-white/8">
-                    <div
-                      class="h-full rounded-full bg-[linear-gradient(90deg,rgba(255,255,255,0.9),rgba(255,255,255,0.45))]"
-                      style={`width:${cameraProgressPercent}%`}
-                    />
+                  <div class={metricCardClass}>
+                    <div class="font-mono text-[0.58rem] uppercase tracking-[0.22em] text-ink-soft">Integration</div>
+                    <div class="mt-1 text-[1.15rem] font-medium text-ink-strong">
+                      {live.session ? formatDuration(live.session.totalExposureSeconds) : "—"}
+                    </div>
+                  </div>
+                  <div class={metricCardClass}>
+                    <div class="font-mono text-[0.58rem] uppercase tracking-[0.22em] text-ink-soft">Filters</div>
+                    <div class="mt-2 flex flex-wrap items-center gap-2 text-[0.92rem] text-ink-strong">
+                      {filterBreakdown.length ? filterBreakdown.map((filter) => (
+                        <span class="inline-flex items-center rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-1 font-mono text-[0.72rem] uppercase tracking-[0.12em] text-ink-muted">
+                          {filter}
+                        </span>
+                      )) : (
+                        <span class="text-[0.96rem] text-ink-muted">—</span>
+                      )}
+                    </div>
                   </div>
                 </div>
-              ) : null}
-            </div>
-
-            <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
-              <section class={metricCardClass}>
-                <div class="font-mono text-[0.58rem] uppercase tracking-[0.22em] text-ink-soft">Camera</div>
-                <div class="mt-2 text-[1rem] font-medium text-ink-strong">{cameraStatus}</div>
-              </section>
-              <section class:list={[metricCardClass, "xl:col-span-2"]}>
-                <div class="font-mono text-[0.58rem] uppercase tracking-[0.22em] text-ink-soft">Mount</div>
-                <div class="mt-2 text-[1rem] font-medium leading-6 text-ink-strong">{mountStatus}</div>
-              </section>
-              <section class={metricCardClass}>
-                <div class="font-mono text-[0.58rem] uppercase tracking-[0.22em] text-ink-soft">Sky quality</div>
-                <div class="mt-2 text-[1rem] font-medium text-ink-strong">{skyQuality}</div>
-              </section>
-              <section class={metricCardClass}>
-                <div class="font-mono text-[0.58rem] uppercase tracking-[0.22em] text-ink-soft">Ambient</div>
-                <div class="mt-2 text-[1rem] font-medium text-ink-strong">{ambientTemperature}</div>
-              </section>
-              <section class={metricCardClass}>
-                <div class="font-mono text-[0.58rem] uppercase tracking-[0.22em] text-ink-soft">Humidity</div>
-                <div class="mt-2 text-[1rem] font-medium text-ink-strong">{humidity}</div>
-              </section>
-              <section class:list={[statPanelClass, "sm:col-span-2 xl:col-span-6"]}>
-                <div class="font-mono text-[0.58rem] uppercase tracking-[0.24em] text-ink-soft">Sequencer</div>
-                <div class="mt-2 text-[1rem] font-medium text-ink-strong">{sequenceStatus}</div>
-                {sequenceTrail ? (
-                  <div class="mt-3 border-t border-white/10 pt-3 font-mono text-[0.72rem] uppercase tracking-[0.14em] text-ink-muted">
-                    {sequenceTrail}
-                  </div>
-                ) : null}
-              </section>
-            </div>
-
-            <div class="grid gap-4 sm:grid-cols-3">
-              <div class={metricCardClass}>
-                <div class="font-mono text-[0.58rem] uppercase tracking-[0.22em] text-ink-soft">Total subs</div>
-                <div class="mt-1 text-[1.15rem] font-medium text-ink-strong">{live.session?.exposureCount ?? 0}</div>
-              </div>
-              <div class={metricCardClass}>
-                <div class="font-mono text-[0.58rem] uppercase tracking-[0.22em] text-ink-soft">Integration</div>
-                <div class="mt-1 text-[1.15rem] font-medium text-ink-strong">
-                  {live.session ? formatDuration(live.session.totalExposureSeconds) : "—"}
-                </div>
-              </div>
-              <div class={metricCardClass}>
-                <div class="font-mono text-[0.58rem] uppercase tracking-[0.22em] text-ink-soft">Filters</div>
-                <div class="mt-2 flex flex-wrap items-center gap-2 text-[0.92rem] text-ink-strong">
-                  {filterBreakdown.length ? filterBreakdown.map((filter) => (
-                    <span class="inline-flex items-center rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-1 font-mono text-[0.72rem] uppercase tracking-[0.12em] text-ink-muted">
-                      {filter}
-                    </span>
-                  )) : (
-                    <span class="text-[0.96rem] text-ink-muted">—</span>
-                  )}
-                </div>
-              </div>
-            </div>
+              </>
+            )}
           </div>
       </div>
     </section>
