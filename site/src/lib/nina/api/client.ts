@@ -4,6 +4,32 @@ import type { ApiEnvelope } from "./types";
 import { apiEnvelopeSchema } from "./schemas";
 import type { ZodType } from "zod";
 
+function normalizeStringifiedResponse<T>(
+  raw: unknown,
+  responseSchema: ZodType<T>,
+): ApiEnvelope<T> | null {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+    return null;
+  }
+
+  const envelope = raw as Record<string, unknown>;
+  if (typeof envelope.Response !== "string") {
+    return null;
+  }
+
+  try {
+    const parsedResponse = JSON.parse(envelope.Response);
+    const reparsed = apiEnvelopeSchema(responseSchema).safeParse({
+      ...envelope,
+      Response: parsedResponse,
+    });
+
+    return reparsed.success ? (reparsed.data as ApiEnvelope<T>) : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function fetchAdvancedEnvelope<T>(
   baseUrl: string,
   path: string,
@@ -37,6 +63,11 @@ export async function fetchAdvancedEnvelope<T>(
 
     const parsed = apiEnvelopeSchema(responseSchema).safeParse(raw);
     if (!parsed.success) {
+      const reparsed = normalizeStringifiedResponse(raw, responseSchema);
+      if (reparsed) {
+        return reparsed;
+      }
+
       if (shouldLogFailure(url)) {
         logAdvancedWarning(
           `Advanced API response from ${url} did not match the expected schema`,

@@ -12,7 +12,7 @@ import {
   loadAdvancedStatus,
   loadImageHistory,
   loadMountInfo,
-  loadOverlaySession,
+  loadOverlaySessionFromList,
   loadWeatherInfo,
 } from "../lib/nina";
 import type { NinaImageRecord, NinaSessionHistory, NinaSessionSummary } from "../lib/nina/session";
@@ -573,9 +573,8 @@ async function syncOnce(previousState: SyncState): Promise<SyncRunResult> {
           lastLivePreviewSignature: null,
         };
 
-  const [sessionList, overlaySession, advancedStatus, imageHistory, mountInfo, weatherInfo] = await Promise.all([
+  const [sessionList, advancedStatus, imageHistory, mountInfo, weatherInfo] = await Promise.all([
     fetchSessionList(ninaBaseUrl),
-    loadOverlaySession(),
     loadAdvancedStatus(),
     loadImageHistory(),
     loadMountInfo(),
@@ -590,6 +589,7 @@ async function syncOnce(previousState: SyncState): Promise<SyncRunResult> {
     };
   }
 
+  const overlaySession = await loadOverlaySessionFromList(ninaBaseUrl, sessionList);
   const activeSessionKey = overlaySession?.summary.key ?? null;
   const summaryMap = new Map(summaries.map((summary) => [summary.key, summary]));
   const sessionKeys = getCandidateSessionKeys(summaries, scopedState, activeSessionKey);

@@ -194,9 +194,14 @@ export async function loadOverlaySession(): Promise<NinaOverlaySessionContext | 
     return null;
   }
 
-  const sessionList = await fetchSessionList(baseUrl);
+  return loadOverlaySessionFromList(baseUrl, await fetchSessionList(baseUrl));
+}
+
+export async function loadOverlaySessionFromList(
+  baseUrl: string,
+  sessionList: NinaSessionListResponse | null,
+): Promise<NinaOverlaySessionContext | null> {
   if (!sessionList?.sessions?.length) {
-    console.warn("No sessions found in session list.");
     return null;
   }
 
