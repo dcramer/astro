@@ -3,9 +3,9 @@
 ********************************************************************
 PixInsight XML Process Serialization Module - XPSM 1.0
 ********************************************************************
-Generated on 2025-02-06T16:05:23.693Z
-PixInsight Core 1.9.2 (x64)
-Copyright (c) 2003-2024 Pleiades Astrophoto
+Generated on 2026-03-18T18:12:46.218Z
+PixInsight Core 1.9.3 (x64)
+Copyright (c) 2003-2025 Pleiades Astrophoto
 ********************************************************************
 -->
 <xpsm version="1.0" xmlns="http://www.pixinsight.com/xpsm" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.pixinsight.com/xpsm http://pixinsight.com/xpsm/xpsm-1.0.xsd">
@@ -82,13 +82,13 @@ Copyright (c) 2003-2024 Pleiades Astrophoto
    </instance>
    <instance class="NoOperation" version="256" id="Run_AutoLinearFit_instance">
       <description>Run through the various Gradient Correction tools and pick one, making sure that you apply it to the actual image</description>
+      <time start="2026-03-18T18:07:28.205Z" span="9.9000008e-06"/>
    </instance>
    <instance class="NoOperation" version="256" id="__RGB_workflow___instance">
       <description>This is the standard SHO process</description>
       <time start="2024-10-29T19:19:39.522Z" span="2.094e-06"/>
    </instance>
    <instance class="BlurXTerminator" version="256" id="BlurX_CorrectOnly_instance">
-      <time start="2024-12-11T16:13:27.840Z" span="27.869938"/>
       <parameter id="ai_file">BlurXTerminator.4.mlpackage</parameter>
       <parameter id="correct_only" value="true"/>
       <parameter id="correct_first" value="false"/>
@@ -256,7 +256,7 @@ Copyright (c) 2003-2024 Pleiades Astrophoto
       <parameter id="St" value="AkimaSubsplines"/>
    </instance>
    <instance class="GradientCorrection" version="1" id="GradientCorrection_instance">
-      <time start="2025-02-04T16:18:28.647Z" span="18.618401"/>
+      <time start="2026-03-18T17:44:33.624Z" span="9.1813409"/>
       <parameter id="reference" value="0.50"/>
       <parameter id="lowThreshold" value="0.20"/>
       <parameter id="lowTolerance" value="0.50"/>
@@ -447,7 +447,7 @@ Copyright (c) 2003-2024 Pleiades Astrophoto
    </instance>
    <instance class="NoOperation" version="256" id="Gradient_Removal_instance">
       <description>Run through the various Gradient Correction tools and pick one, making sure that you apply it to the actual image</description>
-      <time start="2024-10-29T19:19:39.522Z" span="2.094e-06"/>
+      <time start="2026-03-18T17:44:05.633Z" span="7.7e-06"/>
    </instance>
    <instance class="ProcessContainer" id="for_each_in_RGB_instance">
       <instance class="GradientCorrection" version="1" enabled="true">
@@ -796,7 +796,6 @@ Copyright (c) 2003-2024 Pleiades Astrophoto
    </instance>
    <instance class="ProcessContainer" id="RGB_PostProcess_instance">
       <instance class="SpectrophotometricColorCalibration" version="1" enabled="true">
-         <time start="2025-02-06T15:55:17.073Z" span="20.196946"/>
          <parameter id="applyCalibration" value="true"/>
          <parameter id="narrowbandMode" value="false"/>
          <parameter id="narrowbandOptimizeStars" value="false"/>
@@ -944,8 +943,8 @@ Copyright (c) 2003-2024 Pleiades Astrophoto
    <icon id="for_each_in_RGB" instance="for_each_in_RGB_instance" xpos="2085" ypos="243" workspace="Workspace01"/>
    <icon id="RGB_image_list" instance="RGB_image_list_instance" xpos="2085" ypos="837" workspace="Workspace01"/>
    <icon id="___RGB_Combine___" instance="___RGB_Combine____instance" xpos="2085" ypos="405" workspace="Workspace01"/>
-   <icon id="PlateSolveForSPCC" instance="PlateSolveForSPCC_instance" xpos="2085" ypos="459" workspace="Workspace01"/>
+   <icon id="PlateSolveForSPCC" instance="PlateSolveForSPCC_instance" xpos="2088" ypos="459" workspace="Workspace01"/>
    <icon id="NoiseX_tweak" instance="NoiseX_tweak_instance" xpos="2085" ypos="594" workspace="Workspace01"/>
    <icon id="StarX" instance="StarX_instance" xpos="2085" ypos="648" workspace="Workspace01"/>
-   <icon id="RGB_PostProcess" instance="RGB_PostProcess_instance" xpos="2085" ypos="486" workspace="Workspace01"/>
+   <icon id="RGB_PostProcess" instance="RGB_PostProcess_instance" xpos="2084" ypos="487" workspace="Workspace01"/>
 </xpsm>
