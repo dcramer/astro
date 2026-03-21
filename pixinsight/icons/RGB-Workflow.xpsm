@@ -103,7 +103,7 @@ Copyright (c) 2003-2025 Pleiades Astrophoto
    <instance class="Script" version="256" id="StretchStars_instance">
       <time start="2025-01-20T16:19:40.665Z" span="0.55931529"/>
       <parameter id="filePath">$PXI_SRCDIR/scripts/star_stretch_v2.1.js</parameter>
-      <parameter id="md5sum">30074c30de9ac2233845f1e47399c045</parameter>
+      <parameter id="md5sum">8106376758e4e27615b03ca69492a72c</parameter>
       <table id="parameters" rows="4">
          <tr>
             <td id="id">amount</td>
@@ -354,7 +354,7 @@ Copyright (c) 2003-2025 Pleiades Astrophoto
    <instance class="Script" version="256" id="Iconize_Parent_instance">
       <time start="2025-01-23T17:31:30.178Z" span="0.46805247"/>
       <parameter id="filePath">$PXI_SRCDIR/scripts/IconizeChildView.js</parameter>
-      <parameter id="md5sum">bdd58dcd361180c3a6b0e421f3c3ff0e</parameter>
+      <parameter id="md5sum">6ce44e7c98a48e9653ed0be8d11c0ce5</parameter>
       <table id="parameters" rows="1">
          <tr>
             <td id="id">suffix</td>
@@ -366,7 +366,7 @@ Copyright (c) 2003-2025 Pleiades Astrophoto
    <instance class="Script" version="256" id="CloneAndSave_Linear_instance">
       <time start="2025-02-06T16:01:12.253Z" span="1.4767844"/>
       <parameter id="filePath">$PXI_SRCDIR/scripts/CloneWithSuffix.js</parameter>
-      <parameter id="md5sum">59639461256b92c84cc82abf11848c3e</parameter>
+      <parameter id="md5sum">f5123940ea5d18d841071e1c4ff7236b</parameter>
       <table id="parameters" rows="4">
          <tr>
             <td id="id">suffix</td>
@@ -390,7 +390,7 @@ Copyright (c) 2003-2025 Pleiades Astrophoto
    <instance class="Script" version="256" id="CloneAndSave_starless_instance">
       <time start="2025-01-21T14:10:09.384Z" span="1.851412"/>
       <parameter id="filePath">$PXI_SRCDIR/scripts/CloneWithSuffix.js</parameter>
-      <parameter id="md5sum">59639461256b92c84cc82abf11848c3e</parameter>
+      <parameter id="md5sum">f5123940ea5d18d841071e1c4ff7236b</parameter>
       <table id="parameters" rows="2">
          <tr>
             <td id="id">suffix</td>
@@ -478,7 +478,7 @@ Copyright (c) 2003-2025 Pleiades Astrophoto
       </instance>
       <instance class="BlurXTerminator" version="256" enabled="true">
          <time start="2024-12-11T16:13:27.840Z" span="27.869938"/>
-         <parameter id="ai_file">BlurXTerminator.4.mlpackage</parameter>
+         <parameter id="ai_file">BlurXTerminator.4.pb</parameter>
          <parameter id="correct_only" value="true"/>
          <parameter id="correct_first" value="false"/>
          <parameter id="nonstellar_then_stellar" value="false"/>
@@ -491,7 +491,7 @@ Copyright (c) 2003-2025 Pleiades Astrophoto
       </instance>
       <instance class="Script" version="256" enabled="true">
          <parameter id="filePath">$PXI_SRCDIR/scripts/IconizeChildView.js</parameter>
-         <parameter id="md5sum">bdd58dcd361180c3a6b0e421f3c3ff0e</parameter>
+         <parameter id="md5sum">6ce44e7c98a48e9653ed0be8d11c0ce5</parameter>
          <table id="parameters" rows="3">
             <tr>
                <td id="id">suffix</td>
@@ -550,7 +550,7 @@ Copyright (c) 2003-2025 Pleiades Astrophoto
    <instance class="Script" version="256" id="PlateSolveForSPCC_instance">
       <time start="2025-01-05T19:15:14.116Z" span="10.878738"/>
       <parameter id="filePath">$PXI_SRCDIR/scripts/AdP/ImageSolver.js</parameter>
-      <parameter id="md5sum">3b5fce1992b9dccd19398927b95ed363</parameter>
+      <parameter id="md5sum">16c6cdce296a14e1c2880bd32dadc3d6</parameter>
       <table id="parameters" rows="55">
          <tr>
             <td id="id">metadata_focal</td>
@@ -777,7 +777,7 @@ Copyright (c) 2003-2025 Pleiades Astrophoto
    </instance>
    <instance class="NoiseXTerminator" version="256" id="NoiseX_tweak_instance">
       <time start="2025-02-06T16:00:35.985Z" span="30.090123"/>
-      <parameter id="ai_file">NoiseXTerminator.3.mlpackage</parameter>
+      <parameter id="ai_file">NoiseXTerminator.3.pb</parameter>
       <parameter id="enable_color_separation" value="true"/>
       <parameter id="enable_frequency_separation" value="true"/>
       <parameter id="denoise" value="0.90"/>
@@ -789,7 +789,7 @@ Copyright (c) 2003-2025 Pleiades Astrophoto
       <parameter id="detail" value="0.15"/>
    </instance>
    <instance class="StarXTerminator" version="256" id="StarX_instance">
-      <parameter id="ai_file">StarXTerminator.11.mlpackage</parameter>
+      <parameter id="ai_file">StarXTerminator.11.pb</parameter>
       <parameter id="stars" value="true"/>
       <parameter id="unscreen" value="true"/>
       <parameter id="overlap" value="0.20"/>
@@ -852,7 +852,7 @@ Copyright (c) 2003-2025 Pleiades Astrophoto
       </instance>
       <instance class="BlurXTerminator" version="256" enabled="true">
          <time start="2025-02-06T15:55:37.436Z" span="23.530319"/>
-         <parameter id="ai_file">BlurXTerminator.4.mlpackage</parameter>
+         <parameter id="ai_file">BlurXTerminator.4.pb</parameter>
          <parameter id="correct_only" value="false"/>
          <parameter id="correct_first" value="false"/>
          <parameter id="nonstellar_then_stellar" value="false"/>
@@ -865,7 +865,7 @@ Copyright (c) 2003-2025 Pleiades Astrophoto
       </instance>
       <instance class="NoiseXTerminator" version="256" enabled="true">
          <time start="2025-02-06T15:56:01.136Z" span="30.141051"/>
-         <parameter id="ai_file">NoiseXTerminator.3.mlpackage</parameter>
+         <parameter id="ai_file">NoiseXTerminator.3.pb</parameter>
          <parameter id="enable_color_separation" value="true"/>
          <parameter id="enable_frequency_separation" value="true"/>
          <parameter id="denoise" value="0.90"/>
@@ -879,7 +879,7 @@ Copyright (c) 2003-2025 Pleiades Astrophoto
       <instance class="Script" version="256" enabled="true">
          <time start="2025-02-06T15:56:31.444Z" span="2.0488322"/>
          <parameter id="filePath">$PXI_SRCDIR/scripts/CloneWithSuffix.js</parameter>
-         <parameter id="md5sum">59639461256b92c84cc82abf11848c3e</parameter>
+         <parameter id="md5sum">f5123940ea5d18d841071e1c4ff7236b</parameter>
          <table id="parameters" rows="4">
             <tr>
                <td id="id">suffix</td>
@@ -901,7 +901,7 @@ Copyright (c) 2003-2025 Pleiades Astrophoto
          <parameter id="information"></parameter>
       </instance>
       <instance class="StarXTerminator" version="256" enabled="true">
-         <parameter id="ai_file">StarXTerminator.11.mlpackage</parameter>
+         <parameter id="ai_file">StarXTerminator.11.pb</parameter>
          <parameter id="stars" value="true"/>
          <parameter id="unscreen" value="true"/>
          <parameter id="overlap" value="0.20"/>
@@ -909,7 +909,7 @@ Copyright (c) 2003-2025 Pleiades Astrophoto
       <instance class="Script" version="256" enabled="true">
          <time start="2025-02-06T15:56:45.962Z" span="1.0473813"/>
          <parameter id="filePath">$PXI_SRCDIR/scripts/CloneWithSuffix.js</parameter>
-         <parameter id="md5sum">59639461256b92c84cc82abf11848c3e</parameter>
+         <parameter id="md5sum">f5123940ea5d18d841071e1c4ff7236b</parameter>
          <table id="parameters" rows="2">
             <tr>
                <td id="id">suffix</td>

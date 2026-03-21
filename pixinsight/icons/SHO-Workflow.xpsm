@@ -84,7 +84,7 @@ Copyright (c) 2003-2024 Pleiades Astrophoto
    <instance class="Script" version="256" id="SHO_AppendStarless_instance">
       <time start="2024-12-11T16:06:19.612Z" span="0.51041377"/>
       <parameter id="filePath">$PXI_SRCDIR/scripts/AppendPrefixSuffix.js</parameter>
-      <parameter id="md5sum">fe726bbf981fabde5d83f1dc892b5026</parameter>
+      <parameter id="md5sum">0701631bd40b41ab27a3cbf006d3e7e5</parameter>
       <table id="parameters" rows="2">
          <tr>
             <td id="id">prefix</td>
@@ -367,8 +367,8 @@ g;</parameter>
    </instance>
    <instance class="Script" version="256" id="ScreenStars_BLEND_OR_instance">
       <time start="2024-11-27T15:09:04.328Z" span="31.59147"/>
-      <parameter id="filePath">$PXI_SRCDIR/scripts/ImageBlend/ImageBlend.js</parameter>
-      <parameter id="md5sum">54c3fc46149d2aa8c1a5af2a77388284</parameter>
+      <parameter id="filePath">$PXI_SRCDIR/scripts/CosmicPhotons/ImageBlend/ImageBlend.js</parameter>
+      <parameter id="md5sum">9ad1cfb9306c37dd92f2a4fda7e2f07b</parameter>
       <table id="parameters" rows="19">
          <tr>
             <td id="id">imageAId</td>
@@ -506,7 +506,7 @@ g;</parameter>
    </instance>
    <instance class="Script" version="256" id="CloneNB_linear_instance">
       <parameter id="filePath">$PXI_SRCDIR/scripts/CloneWithSuffix.js</parameter>
-      <parameter id="md5sum">59639461256b92c84cc82abf11848c3e</parameter>
+      <parameter id="md5sum">f5123940ea5d18d841071e1c4ff7236b</parameter>
       <table id="parameters" rows="2">
          <tr>
             <td id="id">suffix</td>
@@ -521,7 +521,7 @@ g;</parameter>
    </instance>
    <instance class="Script" version="256" id="CloneNB_stars_instance">
       <parameter id="filePath">$PXI_SRCDIR/scripts/IconizeChildView.js</parameter>
-      <parameter id="md5sum">bdd58dcd361180c3a6b0e421f3c3ff0e</parameter>
+      <parameter id="md5sum">6ce44e7c98a48e9653ed0be8d11c0ce5</parameter>
       <table id="parameters" rows="1">
          <tr>
             <td id="id">suffix</td>
@@ -687,7 +687,7 @@ g;</parameter>
          <parameter id="gridSamplingDelta" value="16"/>
       </instance>
       <instance class="NoiseXTerminator" version="256" enabled="true">
-         <parameter id="ai_file">NoiseXTerminator.3.mlpackage</parameter>
+         <parameter id="ai_file">NoiseXTerminator.3.pb</parameter>
          <parameter id="enable_color_separation" value="true"/>
          <parameter id="enable_frequency_separation" value="true"/>
          <parameter id="denoise" value="0.90"/>
@@ -701,7 +701,7 @@ g;</parameter>
       <instance class="Script" version="256" enabled="true">
          <time start="2025-01-21T14:27:44.104Z" span="0.94340279"/>
          <parameter id="filePath">$PXI_SRCDIR/scripts/CloneWithSuffix.js</parameter>
-         <parameter id="md5sum">59639461256b92c84cc82abf11848c3e</parameter>
+         <parameter id="md5sum">f5123940ea5d18d841071e1c4ff7236b</parameter>
          <table id="parameters" rows="2">
             <tr>
                <td id="id">suffix</td>
@@ -715,7 +715,7 @@ g;</parameter>
          <parameter id="information"></parameter>
       </instance>
       <instance class="StarXTerminator" version="256" enabled="true">
-         <parameter id="ai_file">StarXTerminator.11.mlpackage</parameter>
+         <parameter id="ai_file">StarXTerminator.11.pb</parameter>
          <parameter id="stars" value="true"/>
          <parameter id="unscreen" value="true"/>
          <parameter id="overlap" value="0.20"/>
@@ -723,7 +723,7 @@ g;</parameter>
       <instance class="Script" version="256" enabled="true">
          <time start="2025-01-21T14:28:05.634Z" span="0.54665381"/>
          <parameter id="filePath">$PXI_SRCDIR/scripts/IconizeChildView.js</parameter>
-         <parameter id="md5sum">bdd58dcd361180c3a6b0e421f3c3ff0e</parameter>
+         <parameter id="md5sum">6ce44e7c98a48e9653ed0be8d11c0ce5</parameter>
          <table id="parameters" rows="1">
             <tr>
                <td id="id">suffix</td>

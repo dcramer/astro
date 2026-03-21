@@ -4,6 +4,9 @@
   "description": "Astrophotography automation and organization tools",
   "private": true,
   "type": "module",
+  "scripts": {
+    "validate:pixinsight": "tsx scripts/validate-pixinsight-workflows.ts"
+  },
   "devDependencies": {
     "@types/node": "^22.0.0",
     "tsx": "^4.19.0",
