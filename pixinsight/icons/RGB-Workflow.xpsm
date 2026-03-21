@@ -89,7 +89,7 @@ Copyright (c) 2003-2025 Pleiades Astrophoto
       <time start="2024-10-29T19:19:39.522Z" span="2.094e-06"/>
    </instance>
    <instance class="BlurXTerminator" version="256" id="BlurX_CorrectOnly_instance">
-      <parameter id="ai_file">BlurXTerminator.4.mlpackage</parameter>
+      <parameter id="ai_file">BlurXTerminator.4.pb</parameter>
       <parameter id="correct_only" value="true"/>
       <parameter id="correct_first" value="false"/>
       <parameter id="nonstellar_then_stellar" value="false"/>
@@ -340,7 +340,7 @@ Copyright (c) 2003-2025 Pleiades Astrophoto
    </instance>
    <instance class="BlurXTerminator" version="256" id="BlurX_Full_instance">
       <time start="2025-02-06T16:00:07.503Z" span="24.212443"/>
-      <parameter id="ai_file">BlurXTerminator.4.mlpackage</parameter>
+      <parameter id="ai_file">BlurXTerminator.4.pb</parameter>
       <parameter id="correct_only" value="false"/>
       <parameter id="correct_first" value="false"/>
       <parameter id="nonstellar_then_stellar" value="false"/>

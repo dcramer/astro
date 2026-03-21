@@ -156,7 +156,7 @@ Copyright (c) 2003-2024 Pleiades Astrophoto
    </instance>
    <instance class="BlurXTerminator" version="256" id="SHO_BlurX_Full_instance">
       <time start="2024-12-11T16:02:36.805Z" span="40.382225"/>
-      <parameter id="ai_file">BlurXTerminator.4.mlpackage</parameter>
+      <parameter id="ai_file">BlurXTerminator.4.pb</parameter>
       <parameter id="correct_only" value="false"/>
       <parameter id="correct_first" value="false"/>
       <parameter id="nonstellar_then_stellar" value="false"/>
@@ -629,7 +629,7 @@ g;</parameter>
       <table id="outputData" rows="0"/>
    </instance>
    <instance class="NoiseXTerminator" version="256" id="NoiseX_tweak_SHO_instance">
-      <parameter id="ai_file">NoiseXTerminator.3.mlpackage</parameter>
+      <parameter id="ai_file">NoiseXTerminator.3.pb</parameter>
       <parameter id="enable_color_separation" value="true"/>
       <parameter id="enable_frequency_separation" value="true"/>
       <parameter id="denoise" value="0.90"/>
@@ -641,7 +641,7 @@ g;</parameter>
       <parameter id="detail" value="0.15"/>
    </instance>
    <instance class="StarXTerminator" version="256" id="StarX_SHO_instance">
-      <parameter id="ai_file">StarXTerminator.11.mlpackage</parameter>
+      <parameter id="ai_file">StarXTerminator.11.pb</parameter>
       <parameter id="stars" value="true"/>
       <parameter id="unscreen" value="true"/>
       <parameter id="overlap" value="0.20"/>
@@ -649,7 +649,7 @@ g;</parameter>
    <instance class="ProcessContainer" id="for_each_SHO__ADD_CROP_instance">
       <instance class="BlurXTerminator" version="256" enabled="true">
          <time start="2025-01-21T14:26:54.406Z" span="30.226267"/>
-         <parameter id="ai_file">BlurXTerminator.4.mlpackage</parameter>
+         <parameter id="ai_file">BlurXTerminator.4.pb</parameter>
          <parameter id="correct_only" value="false"/>
          <parameter id="correct_first" value="false"/>
          <parameter id="nonstellar_then_stellar" value="false"/>
