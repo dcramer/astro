@@ -49,7 +49,7 @@ pnpm install
 pnpm dev
 ```
 
-Visit `http://localhost:3000` to preview the overlay. The page disables static caching so every refresh requests fresh session data.
+Visit `http://localhost:3060` to preview the overlay. The page disables static caching so every refresh requests fresh session data.
 
 ## Production Build
 
