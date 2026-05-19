@@ -5,7 +5,10 @@ import { TimeProvider, useTime } from "./contexts/TimeContext";
 
 import { formatDuration, formatNumber, formatTime } from "@nina/format";
 import { getImageThumbnailUrl } from "@nina/advanced";
-import { getNinaAdvancedApiBaseUrl } from "@nina/config";
+import {
+  getNinaAdvancedApiBaseUrl,
+  type TelescopeStreamOverlayConfig,
+} from "@nina/config";
 
 import { useOverlaySession } from "./use-overlay-session";
 import { useTargetEnrichment } from "./use-target-enrichment";
@@ -36,11 +39,13 @@ const DEFAULT_POLL_MS = 5000;
 interface OverlayDisplayProps {
   baseUrl: string | null;
   pollMs?: number;
+  telescopeStream?: TelescopeStreamOverlayConfig;
 }
 
 function OverlayDisplayInner({
   baseUrl,
   pollMs = DEFAULT_POLL_MS,
+  telescopeStream,
 }: OverlayDisplayProps) {
   const now = useTime();
   const {
@@ -336,6 +341,19 @@ function OverlayDisplayInner({
           <StatsRow stats={rowThreeStats} className={styles.statRowSequencer} />
         </div>
       </div>
+
+      {telescopeStream?.enabled ? (
+        <div
+          className={`${styles.telescopeStream} ${
+            telescopeStream.position === "bottom-right"
+              ? styles.telescopeStreamBottomRight
+              : styles.telescopeStreamBottomLeft
+          }`}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={telescopeStream.endpoint} alt="" />
+        </div>
+      ) : null}
     </div>
   );
 }
