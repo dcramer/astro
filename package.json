@@ -5,6 +5,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "start": "node scripts/start.mjs",
     "validate:pixinsight": "tsx scripts/validate-pixinsight-workflows.ts"
   },
   "devDependencies": {
