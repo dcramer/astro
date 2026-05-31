@@ -8,8 +8,7 @@
 | Task | Command |
 |------|---------|
 | Lint overlay | `pnpm lint` |
-| Fast lint a file | `pnpm exec oxlint path/to/file.tsx` |
-| Next-specific lint a file | `pnpm exec eslint path/to/file.tsx` |
+| Lint a file | `pnpm exec oxlint path/to/file.tsx` |
 | Typecheck overlay | `pnpm exec tsc --noEmit` |
 | Typecheck catalog package | `pnpm --dir packages/astro-catalog typecheck` |
 | Validate JSON | `jq empty path/to/file.json` |
