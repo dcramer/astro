@@ -17,6 +17,7 @@ const eslintConfig = [
       ".next/**",
       "out/**",
       "build/**",
+      "packages/astro-catalog/dist/**",
       "next-env.d.ts",
     ],
   },

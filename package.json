@@ -5,6 +5,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "lint": "pnpm --dir overlay lint",
     "start": "node scripts/start.mjs",
     "validate:pixinsight": "tsx scripts/validate-pixinsight-workflows.ts"
   },
