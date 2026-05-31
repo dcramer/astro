@@ -25,14 +25,16 @@ Follow the guidance in `AGENTS.md` before contributing; most importantly, never 
 ## Automation & Tooling Summary
 Our core automation relies on Sequencer Powerups for shared blocks, Remote Copy for data offload, Ground Station for alerts, and Shutdown PC for end-of-night power-down. The plugin notes capture any extra setup required.
 
-## Local Dev Stack
+## Overlay & Sync Stack
 From the repository root, run:
 
 ```bash
 pnpm start
 ```
 
-This refreshes Cloudflare worker types, applies local D1 migrations, starts the Astro site server at `http://localhost:4321`, starts the standalone overlay at `http://localhost:3060`, and runs the site sync daemon pointed at the local server. The root command pins sync to `http://127.0.0.1:4321` with the local development secret so a `site/.env` production target is not used accidentally.
+This starts the standalone overlay at `http://localhost:3060` and runs the site sync daemon. The sync daemon reads `site/.env`; with the production `SYNC_API_BASE_URL` and `SYNC_HMAC_SECRET` configured there, it pushes N.I.N.A. session/current-state data and thumbnails to the Cloudflare site.
+
+For local Astro site work, run the `site/` package commands directly, such as `pnpm --dir site dev` or `pnpm --dir site db:apply`.
 
 ## Hardware Snapshot
 The current imaging rig is an Astro-Physics Mach2GTO mount paired with a Stellarvue SVX152T refractor, MoonLite NiteCrawler WR35 focuser/rotator, Gerd Neumann CTU tilt unit, ZWO ASI6200MM Pro camera, ZWO 7x2" EFW, and Chroma 3 nm SHO plus LRGB filters. Full specs, spacing budgets, derived metrics, and filter links live under `hardware/`.

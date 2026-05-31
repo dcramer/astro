@@ -1,5 +1,30 @@
 import { z } from "zod";
 
+function normalizeOptionalNumber(value: unknown): unknown {
+  if (value === null) {
+    return undefined;
+  }
+
+  if (typeof value === "number" && Number.isNaN(value)) {
+    return undefined;
+  }
+
+  if (typeof value !== "string") {
+    return value;
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed || trimmed.toLowerCase() === "nan") {
+    return undefined;
+  }
+
+  const parsed = Number(trimmed);
+  return Number.isFinite(parsed) ? parsed : value;
+}
+
+const ninaOptionalNumberSchema = z.preprocess(normalizeOptionalNumber, z.number().optional());
+const ninaOptionalIntegerSchema = z.preprocess(normalizeOptionalNumber, z.number().int().optional());
+
 export const ninaSessionSummarySchema = z.object({
   key: z.string(),
   display: z.string(),
@@ -28,19 +53,19 @@ export const ninaImageRecordSchema = z.object({
   fileName: z.string(),
   fullPath: z.string(),
   started: z.string(),
-  epochMilliseconds: z.number().int().optional(),
+  epochMilliseconds: ninaOptionalIntegerSchema,
   duration: z.number(),
   filterName: z.string().optional(),
-  detectedStars: z.number().optional(),
-  HFR: z.number().optional(),
-  GuidingRMS: z.number().optional(),
-  GuidingRMSArcSec: z.number().optional(),
-  GuidingRMSRA: z.number().optional(),
-  GuidingRMSRAArcSec: z.number().optional(),
-  GuidingRMSDEC: z.number().optional(),
-  GuidingRMSDECArcSec: z.number().optional(),
-  FocuserTemperature: z.number().optional(),
-  WeatherTemperature: z.number().optional(),
+  detectedStars: ninaOptionalIntegerSchema,
+  HFR: ninaOptionalNumberSchema,
+  GuidingRMS: ninaOptionalNumberSchema,
+  GuidingRMSArcSec: ninaOptionalNumberSchema,
+  GuidingRMSRA: ninaOptionalNumberSchema,
+  GuidingRMSRAArcSec: ninaOptionalNumberSchema,
+  GuidingRMSDEC: ninaOptionalNumberSchema,
+  GuidingRMSDECArcSec: ninaOptionalNumberSchema,
+  FocuserTemperature: ninaOptionalNumberSchema,
+  WeatherTemperature: ninaOptionalNumberSchema,
 }).passthrough();
 
 export const ninaTargetSchema = z.object({
