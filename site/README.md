@@ -39,6 +39,16 @@ Current image behavior:
 - the live/overlay preview is uploaded from N.I.N.A.'s `prepared-image` endpoint every sync tick
 - archived exposure thumbnails are rendered remotely by the Web Session History Viewer via `PUT /api/1020/image/create`, then copied into Cloudflare storage
 
+## Streamlabs browser source
+
+Use a deploy-specific cache buster in the Browser Source URL when you change overlay code:
+
+```bash
+https://<overlay-host>/overlay?v=2026-05-31-1
+```
+
+Increment `v` after each deploy. In Streamlabs, enable `Shutdown source when not visible` and `Refresh browser when scene becomes active`. The overlay page and live API endpoints send `no-store` headers, and the client app appends cache-busting query params to polling and thumbnail requests.
+
 ## Cloudflare setup
 
 Configure the following before deploy:

@@ -28,7 +28,13 @@ import styles from "./page.module.css";
 
 const DEFAULT_POLL_MS = 5000;
 
+function cacheBustedUrl(url: string, value: string | number): string {
+  const separator = url.includes("?") ? "&" : "?";
+  return `${url}${separator}v=${encodeURIComponent(String(value))}`;
+}
+
 interface OverlayDisplayProps {
+  initialNow?: number;
   pollMs?: number;
 }
 
@@ -76,7 +82,12 @@ function OverlayDisplayInner({
   const latestDuration = formatDuration(latestImage?.exposureDurationSeconds ?? null);
 
   const previewClass = styles.thumbnail;
-  const latestThumbnailUrl = hasImages ? latestImage?.thumbnailUrl ?? null : null;
+  const latestThumbnailUrl = hasImages && latestImage?.thumbnailUrl
+    ? cacheBustedUrl(
+        latestImage.thumbnailUrl,
+        latestImage.startTime ?? latestImage.originalIndex ?? "latest",
+      )
+    : null;
 
   const cameraData =
     !connectionOffline && advancedStatus?.available && advancedStatus.camera
@@ -325,7 +336,7 @@ function OverlayDisplayInner({
 
 export default function OverlayDisplay(props: OverlayDisplayProps) {
   return (
-    <TimeProvider intervalMs={1000}>
+    <TimeProvider initialNow={props.initialNow} intervalMs={1000}>
       <OverlayDisplayInner {...props} />
     </TimeProvider>
   );

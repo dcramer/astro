@@ -11,6 +11,12 @@ export const revalidate = 0;
 export const runtime = "nodejs";
 
 const BOUNDARY = "astro-overlay-telescope";
+const NO_STORE_HEADERS = {
+  "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0",
+  Expires: "0",
+  Pragma: "no-cache",
+};
+const STREAM_IDLE_TIMEOUT_MS = 15_000;
 
 let ffmpegAvailability:
   | { available: boolean; executable: string; message: string | null }
@@ -118,7 +124,7 @@ function renderPlaceholderImage(
 
   return new Response(svg, {
     headers: {
-      "Cache-Control": "no-store",
+      ...NO_STORE_HEADERS,
       "Content-Type": "image/svg+xml; charset=utf-8",
     },
   });
@@ -130,7 +136,7 @@ export async function GET(request: Request) {
     return new Response("Telescope stream is not configured.\n", {
       status: 404,
       headers: {
-        "Cache-Control": "no-store",
+        ...NO_STORE_HEADERS,
         "Content-Type": "text/plain; charset=utf-8",
       },
     });
@@ -149,6 +155,14 @@ export async function GET(request: Request) {
 
   let ffmpeg: ChildProcessWithoutNullStreams | null = null;
   let closed = false;
+  let idleTimeout: NodeJS.Timeout | null = null;
+
+  const clearIdleTimeout = () => {
+    if (idleTimeout) {
+      clearTimeout(idleTimeout);
+      idleTimeout = null;
+    }
+  };
 
   const stopFfmpeg = () => {
     if (!ffmpeg || ffmpeg.killed) {
@@ -169,12 +183,35 @@ export async function GET(request: Request) {
       const process = spawn(config.ffmpegPath, buildFfmpegArgs(config));
       ffmpeg = process;
 
+      const closeStalledStream = () => {
+        if (closed) {
+          return;
+        }
+
+        closed = true;
+        console.warn("Telescope stream stalled; restarting on next client request.");
+        stopFfmpeg();
+        try {
+          controller.close();
+        } catch {
+          // The client may already have disconnected.
+        }
+      };
+
+      const armIdleTimeout = () => {
+        clearIdleTimeout();
+        idleTimeout = setTimeout(closeStalledStream, STREAM_IDLE_TIMEOUT_MS);
+        idleTimeout.unref();
+      };
+
       const abort = () => {
         closed = true;
+        clearIdleTimeout();
         stopFfmpeg();
       };
 
       request.signal.addEventListener("abort", abort, { once: true });
+      armIdleTimeout();
 
       process.stdout.on("data", (chunk: Buffer) => {
         if (closed) {
@@ -182,9 +219,11 @@ export async function GET(request: Request) {
         }
 
         try {
+          armIdleTimeout();
           controller.enqueue(new Uint8Array(chunk));
         } catch (error) {
           closed = true;
+          clearIdleTimeout();
           console.error("Failed to stream telescope frame:", error);
           stopFfmpeg();
         }
@@ -199,6 +238,7 @@ export async function GET(request: Request) {
       });
 
       process.on("error", (error) => {
+        clearIdleTimeout();
         if (!closed) {
           closed = true;
           controller.error(error);
@@ -208,6 +248,7 @@ export async function GET(request: Request) {
 
       process.on("close", (code, signal) => {
         const expectedClose = closed;
+        clearIdleTimeout();
         request.signal.removeEventListener("abort", abort);
         if (!closed) {
           closed = true;
@@ -222,16 +263,18 @@ export async function GET(request: Request) {
     },
     cancel() {
       closed = true;
+      clearIdleTimeout();
       stopFfmpeg();
     },
   });
 
   return new Response(stream, {
     headers: {
-      "Cache-Control": "no-cache, no-store, must-revalidate",
+      ...NO_STORE_HEADERS,
+      "Cache-Control": `${NO_STORE_HEADERS["Cache-Control"]}, no-transform`,
       Connection: "close",
       "Content-Type": `multipart/x-mixed-replace; boundary=${BOUNDARY}`,
-      Pragma: "no-cache",
+      "X-Accel-Buffering": "no",
     },
   });
 }

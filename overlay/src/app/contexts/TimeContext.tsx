@@ -10,6 +10,7 @@ const TimeContext = createContext<TimeContextValue | undefined>(undefined);
 
 interface TimeProviderProps {
   children: ReactNode;
+  initialNow?: number;
   intervalMs?: number;
 }
 
@@ -17,8 +18,12 @@ interface TimeProviderProps {
  * Provides a shared time value that updates at a regular interval.
  * This prevents multiple components from creating their own intervals.
  */
-export function TimeProvider({ children, intervalMs = 1000 }: TimeProviderProps) {
-  const [now, setNow] = useState(() => Date.now());
+export function TimeProvider({
+  children,
+  initialNow,
+  intervalMs = 1000,
+}: TimeProviderProps) {
+  const [now, setNow] = useState(() => initialNow ?? Date.now());
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {

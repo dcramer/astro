@@ -1,17 +1,26 @@
 ---
 import "@/styles/overlay.css";
+import { NO_STORE_HEADERS } from "@/lib/api-response";
 
 interface Props {
   title: string;
   description?: string;
+  noStore?: boolean;
   noindex?: boolean;
 }
 
 const {
   title,
   description = "Live overlay for the current imaging session.",
+  noStore = true,
   noindex = true,
 } = Astro.props;
+
+if (noStore) {
+  for (const [key, value] of Object.entries(NO_STORE_HEADERS)) {
+    Astro.response.headers.set(key, value);
+  }
+}
 ---
 
 <!doctype html>
@@ -21,6 +30,15 @@ const {
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
     <meta name="description" content={description} />
+    {
+      noStore && (
+        <>
+          <meta http-equiv="cache-control" content="no-store, no-cache, must-revalidate" />
+          <meta http-equiv="pragma" content="no-cache" />
+          <meta http-equiv="expires" content="0" />
+        </>
+      )
+    }
     {noindex && <meta name="robots" content="noindex, nofollow" />}
   </head>
   <body>

@@ -38,9 +38,10 @@ FFMPEG_PATH=ffmpeg
 TELESCOPE_STREAM_POSITION=bottom-left
 TELESCOPE_STREAM_FPS=10
 TELESCOPE_STREAM_QUALITY=5
+TELESCOPE_STREAM_REFRESH_MS=60000
 ```
 
-`TELESCOPE_STREAM_POSITION` accepts `bottom-left` or `bottom-right`. The server route converts the feed to MJPEG at `/api/telescope-stream`, so OBS only needs the overlay browser source.
+`TELESCOPE_STREAM_POSITION` accepts `bottom-left` or `bottom-right`. The server route converts the feed to MJPEG at `/api/telescope-stream`, so OBS only needs the overlay browser source. The browser reconnects the stream every `TELESCOPE_STREAM_REFRESH_MS` milliseconds so stale RTSP/MJPEG connections recover without refreshing the full overlay.
 
 ## Development
 
@@ -50,6 +51,16 @@ pnpm dev
 ```
 
 Visit `http://localhost:3060` to preview the overlay. The page disables static caching so every refresh requests fresh session data.
+
+## Streamlabs Browser Source
+
+Use a deploy-specific cache buster in the Browser Source URL when you change overlay code:
+
+```
+http://localhost:3060/?v=2026-05-31-1
+```
+
+Increment `v` after each deploy. In Streamlabs, enable `Shutdown source when not visible` and `Refresh browser when scene becomes active`. The overlay also sends `no-store` headers and appends cache-busting query params to live API, thumbnail, and telescope stream requests so Streamlabs' embedded browser does not reuse stale responses.
 
 ## Production Build
 

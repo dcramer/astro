@@ -1,6 +1,6 @@
 import type { APIRoute } from "astro";
 
-import { jsonResponse } from "@/lib/api-response";
+import { NO_STORE_HEADERS, jsonResponse } from "@/lib/api-response";
 import {
   getImageThumbnailUrl,
   loadAdvancedStatus,
@@ -9,6 +9,11 @@ import {
   loadWeatherInfo,
 } from "@nina/advanced";
 import { getNinaAdvancedApiBaseUrl } from "@nina/config";
+
+function cacheBustedUrl(url: string, value: string | number): string {
+  const separator = url.includes("?") ? "&" : "?";
+  return `${url}${separator}v=${encodeURIComponent(String(value))}`;
+}
 
 export const GET: APIRoute = async ({ request }) => {
   try {
@@ -53,23 +58,22 @@ export const GET: APIRoute = async ({ request }) => {
     const imagesWithThumbnails = images.map((image) => ({
       ...image,
       thumbnailUrl: advancedBaseUrl && image.originalIndex !== undefined
-        ? getImageThumbnailUrl(advancedBaseUrl, image.originalIndex)
+        ? cacheBustedUrl(
+            getImageThumbnailUrl(advancedBaseUrl, image.originalIndex),
+            image.startTime ?? image.originalIndex,
+          )
         : null,
     }));
 
     return jsonResponse(request, { images: imagesWithThumbnails, advanced, mount, weather }, {
-      headers: {
-        "cache-control": "no-store",
-      },
+      headers: NO_STORE_HEADERS,
     });
   } catch (error) {
     console.error("Failed to load overlay session", error);
 
     return jsonResponse(request, { error: "Failed to load overlay session" }, {
       status: 500,
-      headers: {
-        "cache-control": "no-store",
-      },
+      headers: NO_STORE_HEADERS,
     });
   }
 };

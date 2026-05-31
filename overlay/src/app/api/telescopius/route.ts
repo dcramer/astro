@@ -12,6 +12,15 @@ interface SearchOptions {
   computeCurrent?: boolean;
 }
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+const NO_STORE_HEADERS = {
+  "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0",
+  Expires: "0",
+  Pragma: "no-cache",
+};
+
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const ra = searchParams.get("ra");
@@ -29,7 +38,7 @@ export async function GET(request: NextRequest) {
   if (!ra || !dec) {
     return NextResponse.json(
       { error: "Missing required parameters: ra and dec" },
-      { status: 400 },
+      { status: 400, headers: NO_STORE_HEADERS },
     );
   }
 
@@ -59,9 +68,9 @@ export async function GET(request: NextRequest) {
   if (!result) {
     return NextResponse.json(
       { error: "Failed to fetch targets from Telescopius" },
-      { status: 500 },
+      { status: 500, headers: NO_STORE_HEADERS },
     );
   }
 
-  return NextResponse.json(result);
+  return NextResponse.json(result, { headers: NO_STORE_HEADERS });
 }

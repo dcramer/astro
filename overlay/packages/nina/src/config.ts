@@ -8,6 +8,7 @@ const TELESCOPE_STREAM_WIDTH_PX = 352;
 const TELESCOPE_STREAM_HEIGHT_PX = 264;
 const DEFAULT_TELESCOPE_STREAM_FPS = 10;
 const DEFAULT_TELESCOPE_STREAM_QUALITY = 5;
+const DEFAULT_TELESCOPE_STREAM_REFRESH_MS = 60_000;
 const DEFAULT_FFMPEG_PATH = "ffmpeg";
 const TELESCOPE_STREAM_ENDPOINT = "/api/telescope-stream";
 
@@ -18,6 +19,7 @@ export interface TelescopeStreamOverlayConfig {
   enabled: boolean;
   endpoint: string;
   position: TelescopeStreamPosition;
+  refreshMs: number;
 }
 
 export interface TelescopeStreamFfmpegConfig {
@@ -124,6 +126,10 @@ export function getTelescopeStreamOverlayConfig(): TelescopeStreamOverlayConfig 
     enabled: Boolean(getTelescopeStreamInputUrl()),
     endpoint: TELESCOPE_STREAM_ENDPOINT,
     position: getTelescopeStreamPosition(),
+    refreshMs: parsePositiveInteger(
+      process.env.TELESCOPE_STREAM_REFRESH_MS,
+      DEFAULT_TELESCOPE_STREAM_REFRESH_MS,
+    ),
   };
 }
 

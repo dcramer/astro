@@ -6,6 +6,12 @@ const ALLOWED_ORIGINS = new Set([
   "http://127.0.0.1:4322",
 ]);
 
+export const NO_STORE_HEADERS = {
+  "cache-control": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0",
+  expires: "0",
+  pragma: "no-cache",
+} as const;
+
 function appendVary(headers: Headers, value: string): void {
   const current = headers.get("vary");
   if (!current) {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { TimeProvider, useTime } from "./contexts/TimeContext";
 
 import { formatDuration, formatNumber, formatTime } from "@nina/format";
@@ -35,17 +35,80 @@ import {
 import styles from "./page.module.css";
 
 const DEFAULT_POLL_MS = 5000;
+const MIN_TELESCOPE_STREAM_REFRESH_MS = 5_000;
+
+function cacheBustedUrl(url: string, value: string | number): string {
+  const separator = url.includes("?") ? "&" : "?";
+  return `${url}${separator}v=${encodeURIComponent(String(value))}`;
+}
 
 interface OverlayDisplayProps {
   baseUrl: string | null;
+  initialNow?: number;
   pollMs?: number;
   telescopeStream?: TelescopeStreamOverlayConfig;
+  telescopeStreamCacheBuster?: string | number;
+}
+
+interface TelescopeStreamImageProps {
+  endpoint: string;
+  initialCacheBuster: string | number;
+  refreshMs: number;
+}
+
+function TelescopeStreamImage({
+  endpoint,
+  initialCacheBuster,
+  refreshMs,
+}: TelescopeStreamImageProps) {
+  const [src, setSrc] = useState<string | null>(null);
+  const retryTimeoutRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    const reconnect = (cacheBuster: string | number = Date.now()) => {
+      setSrc(cacheBustedUrl(endpoint, cacheBuster));
+    };
+    const effectiveRefreshMs = Math.max(
+      refreshMs,
+      MIN_TELESCOPE_STREAM_REFRESH_MS,
+    );
+
+    reconnect(initialCacheBuster);
+    const intervalId = window.setInterval(reconnect, effectiveRefreshMs);
+
+    return () => {
+      window.clearInterval(intervalId);
+      if (retryTimeoutRef.current !== null) {
+        window.clearTimeout(retryTimeoutRef.current);
+        retryTimeoutRef.current = null;
+      }
+    };
+  }, [endpoint, initialCacheBuster, refreshMs]);
+
+  const handleError = () => {
+    if (retryTimeoutRef.current !== null) {
+      return;
+    }
+
+    retryTimeoutRef.current = window.setTimeout(() => {
+      retryTimeoutRef.current = null;
+      setSrc(cacheBustedUrl(endpoint, Date.now()));
+    }, 2_000);
+  };
+
+  if (!src) {
+    return null;
+  }
+
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src={src} alt="" onError={handleError} />;
 }
 
 function OverlayDisplayInner({
   baseUrl,
   pollMs = DEFAULT_POLL_MS,
   telescopeStream,
+  telescopeStreamCacheBuster = "stream",
 }: OverlayDisplayProps) {
   const now = useTime();
   const {
@@ -80,7 +143,10 @@ function OverlayDisplayInner({
   const previewClass = styles.thumbnail;
   const latestThumbnailUrl =
     hasImages && advancedBaseUrl && latestImage?.originalIndex !== undefined
-      ? getImageThumbnailUrl(advancedBaseUrl, latestImage.originalIndex)
+      ? cacheBustedUrl(
+          getImageThumbnailUrl(advancedBaseUrl, latestImage.originalIndex),
+          latestImage.startTime ?? latestImage.originalIndex,
+        )
       : null;
 
   const cameraData =
@@ -345,13 +411,16 @@ function OverlayDisplayInner({
       {telescopeStream?.enabled ? (
         <div
           className={`${styles.telescopeStream} ${
-            telescopeStream.position === "bottom-right"
+            telescopeStream?.position === "bottom-right"
               ? styles.telescopeStreamBottomRight
               : styles.telescopeStreamBottomLeft
           }`}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={telescopeStream.endpoint} alt="" />
+          <TelescopeStreamImage
+            endpoint={telescopeStream.endpoint}
+            initialCacheBuster={telescopeStreamCacheBuster}
+            refreshMs={telescopeStream.refreshMs}
+          />
         </div>
       ) : null}
     </div>
@@ -360,7 +429,7 @@ function OverlayDisplayInner({
 
 export default function OverlayDisplay(props: OverlayDisplayProps) {
   return (
-    <TimeProvider intervalMs={1000}>
+    <TimeProvider initialNow={props.initialNow} intervalMs={1000}>
       <OverlayDisplayInner {...props} />
     </TimeProvider>
   );

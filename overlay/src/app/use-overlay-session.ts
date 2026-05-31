@@ -11,6 +11,11 @@ import type {
 
 const FAILURE_THRESHOLD = 3;
 
+function cacheBustedUrl(url: string): string {
+  const separator = url.includes("?") ? "&" : "?";
+  return `${url}${separator}_=${Date.now()}`;
+}
+
 interface UseOverlaySessionOptions {
   baseUrl: string | null;
   pollMs: number;
@@ -61,7 +66,9 @@ export function useOverlaySession(
 
     async function fetchLatest() {
       try {
-        const response = await fetch("/api/overlay-session", { cache: "no-store" });
+        const response = await fetch(cacheBustedUrl("/api/overlay-session"), {
+          cache: "no-store",
+        });
         if (!response.ok) {
           throw new Error(`Request failed: ${response.status}`);
         }

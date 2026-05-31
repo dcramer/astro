@@ -10,6 +10,11 @@ import type { CurrentTargetSnapshot, LiveApiResponse } from "@/lib/site-types";
 
 const FAILURE_THRESHOLD = 3;
 
+function cacheBustedUrl(url: string): string {
+  const separator = url.includes("?") ? "&" : "?";
+  return `${url}${separator}_=${Date.now()}`;
+}
+
 interface UseOverlaySessionOptions {
   pollMs: number;
 }
@@ -57,7 +62,7 @@ export function useOverlaySession(
     let cancelled = false;
 
     async function fetchJson<T>(url: string): Promise<T> {
-      const response = await fetch(url, { cache: "no-store" });
+      const response = await fetch(cacheBustedUrl(url), { cache: "no-store" });
       if (!response.ok) {
         throw new Error(`Request failed: ${response.status} (${url})`);
       }
